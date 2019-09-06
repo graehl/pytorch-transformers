@@ -77,7 +77,7 @@ def batch_inputs(batch, model_type):
               'attention_mask': batch[1],
               'labels':         batch[3]}
     if model_type != 'distilbert':
-        inputs['token_type_ids'] = batch[2] if model_type in ['bert', 'xlnet'] else None,
+        inputs['token_type_ids'] = batch[2] if model_type in ['bert', 'xlnet'] else None
         # XLM and RoBERTa don't use segment_ids
     return inputs
 
