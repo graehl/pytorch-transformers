@@ -73,7 +73,7 @@ class Embeddings(nn.Module):
         self.LayerNorm = nn.LayerNorm(config.dim, eps=1e-12)
         self.dropout = nn.Dropout(config.dropout)
 
-    def forward(self, input_ids):
+    def forward(self, input_ids, token_type_ids):
         """
         Parameters
         ----------
@@ -85,6 +85,7 @@ class Embeddings(nn.Module):
         embeddings: torch.tensor(bs, max_seq_length, dim)
             The embedded tokens (plus position embeddings, no token_type embeddings)
         """
+        assert token_type_ids is None
         seq_length = input_ids.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids.device) # (max_seq_length)
         position_ids = position_ids.unsqueeze(0).expand_as(input_ids)                      # (bs, max_seq_length)
@@ -338,7 +339,7 @@ class DistilBertPreTrainedModel(PreTrainedModel):
 
     def __init__(self, *inputs, **kwargs):
         super(DistilBertPreTrainedModel, self).__init__(*inputs, **kwargs)
-    
+
     def _init_weights(self, module):
         """ Initialize the weights.
         """
@@ -367,12 +368,12 @@ DISTILBERT_START_DOCSTRING = r"""
 
     For more information on DistilBERT, please refer to our
     `detailed blog post`_
-    
+
     .. _`detailed blog post`:
         https://medium.com/huggingface/distilbert-8cf3380435b5
 
     Parameters:
-        config (:class:`~pytorch_transformers.DistilBertConfig`): Model configuration class with all the parameters of the model. 
+        config (:class:`~pytorch_transformers.DistilBertConfig`): Model configuration class with all the parameters of the model.
             Initializing with a config file does not load the weights associated with the model, only the configuration.
             Check out the :meth:`~pytorch_transformers.PreTrainedModel.from_pretrained` method to load the model weights.
 """
@@ -382,7 +383,7 @@ DISTILBERT_INPUTS_DOCSTRING = r"""
         **input_ids** ``torch.LongTensor`` of shape ``(batch_size, sequence_length)``:
             Indices of input sequence tokens in the vocabulary.
             The input sequences should start with `[CLS]` and end with `[SEP]` tokens.
-            
+
             For now, ONLY BertTokenizer(`bert-base-uncased`) is supported and you should use this tokenizer when using DistilBERT.
         **attention_mask**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size, sequence_length)``:
             Mask to avoid performing attention on padding token indices.
@@ -538,7 +539,7 @@ class DistilBertForMaskedLM(DistilBertPreTrainedModel):
         if masked_lm_labels is not None:
             mlm_loss = self.mlm_loss_fct(prediction_logits.view(-1, prediction_logits.size(-1)),
                                          masked_lm_labels.view(-1))
-            outputs = (mlm_loss,) + outputs     
+            outputs = (mlm_loss,) + outputs
 
         return outputs # (mlm_loss), prediction_logits, (all hidden_states), (all attentions)
 
@@ -661,7 +662,7 @@ class DistilBertForQuestionAnswering(DistilBertPreTrainedModel):
         self.dropout = nn.Dropout(config.qa_dropout)
 
         self.init_weights()
-        
+
     def forward(self, input_ids, attention_mask=None, start_positions=None, end_positions=None, head_mask=None):
         distilbert_output = self.distilbert(input_ids=input_ids,
                                       attention_mask=attention_mask,
