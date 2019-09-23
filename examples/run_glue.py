@@ -78,7 +78,7 @@ def batch_inputs(batch, model_type):
               'labels':         batch[3]}
     if model_type != 'distilbert':
         inputs['token_type_ids'] = batch[2] if model_type in ['bert', 'xlnet'] else None
-        # XLM and RoBERTa don't use segment_ids
+        # XLM and RoBERTa and distilbert don't use segment (token_type_ids) ids
     return inputs
 
 
