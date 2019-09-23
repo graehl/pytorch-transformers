@@ -462,7 +462,7 @@ class DistilBertModel(DistilBertPreTrainedModel):
         else:
             head_mask = [None] * self.config.num_hidden_layers
 
-        embedding_output = self.embeddings(input_ids)   # (bs, seq_length, dim)
+        embedding_output = self.embeddings(input_ids, token_type_ids=token_type_ids)   # (bs, seq_length, dim)
         tfmr_output = self.transformer(x=embedding_output,
                                        attn_mask=attention_mask,
                                        head_mask=head_mask)
@@ -594,7 +594,7 @@ class DistilBertForSequenceClassification(DistilBertPreTrainedModel):
         assert token_type_ids is None
         distilbert_output = self.distilbert(input_ids=input_ids,
                                             attention_mask=attention_mask,
-                                            head_mask=head_mask)
+                                            head_mask=head_mask, token_type_ids=token_type_ids)
         hidden_state = distilbert_output[0]                    # (bs, seq_len, dim)
         pooled_output = hidden_state[:, 0]                    # (bs, dim)
         pooled_output = self.pre_classifier(pooled_output)   # (bs, dim)
