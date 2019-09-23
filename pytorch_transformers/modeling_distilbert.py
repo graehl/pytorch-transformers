@@ -589,7 +589,8 @@ class DistilBertForSequenceClassification(DistilBertPreTrainedModel):
 
         self.init_weights()
 
-    def forward(self, input_ids,  attention_mask=None, head_mask=None, labels=None):
+    def forward(self, input_ids,  attention_mask=None, head_mask=None, labels=None, token_type_ids=None):
+        assert token_type_ids is None
         distilbert_output = self.distilbert(input_ids=input_ids,
                                             attention_mask=attention_mask,
                                             head_mask=head_mask)
