@@ -69,7 +69,7 @@ MODEL_CLASSES = {
 verbosity = 1
 verbose_outfile = None
 import sys
-def verbose(s, v=1):
+def outverbose(s, v=1):
     s += '\n'
     if verbosity >= v:
         if verbose_outfile is not None:
@@ -259,7 +259,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                     inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
-                verbose('%s\t%s' % (logits, labels), v = 1)
+                outverbose('%s\t%s' % (logits, labels), v = 1)
                 eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
             if preds is None:
