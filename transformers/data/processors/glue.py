@@ -110,7 +110,9 @@ def glue_convert_examples_to_features(examples, tokenizer,
         assert len(token_type_ids) == max_length, "Error with input length {} vs {}".format(len(token_type_ids), max_length)
 
         if output_mode == "classification":
-            label = label_map[example.label]
+            label = example.label
+            assert label in label_map, "%s not in %s", (label, label_map)
+            label = label_map[label]
         elif output_mode == "regression":
             label = float(example.label)
         else:
