@@ -663,7 +663,7 @@ class PreTrainedTokenizer(object):
         """
         raise NotImplementedError
 
-    def convert_tokens_to_ids(self, tokens):
+    def convert_tokens_to_ids(self, tokens, warn=True):
         """ Converts a single token, or a sequence of tokens, (str/unicode) in a single integer id
             (resp. a sequence of ids), using the vocabulary.
         """
@@ -676,7 +676,7 @@ class PreTrainedTokenizer(object):
         ids = []
         for token in tokens:
             ids.append(self._convert_token_to_id_with_added_voc(token))
-        if len(ids) > self.max_len:
+        if warn and len(ids) > self.max_len:
             logger.warning("Token indices sequence length is longer than the specified maximum sequence length "
                            "for this model ({} > {}). Running this sequence through the model will result in "
                            "indexing errors".format(len(ids), self.max_len))
@@ -772,7 +772,7 @@ class PreTrainedTokenizer(object):
 
         def get_input_ids(text):
             if isinstance(text, six.string_types):
-                return self.convert_tokens_to_ids(self.tokenize(text, **kwargs))
+                return self.convert_tokens_to_ids(self.tokenize(text, **kwargs), warn=False)
             elif isinstance(text, (list, tuple)) and len(text) > 0 and isinstance(text[0], six.string_types):
                 return self.convert_tokens_to_ids(text)
             elif isinstance(text, (list, tuple)) and len(text) > 0 and isinstance(text[0], int):
