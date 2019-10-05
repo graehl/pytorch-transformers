@@ -30,9 +30,9 @@ except:
 for corpin, corpout in (('test', 'dev'), ('train', 'train')):
     outfn = '%s/%s.tsv' % (outd, corpout)
     outf = open(outfn, 'w', encoding='utf-8')
+    print('sentence\tlabel', file=outf)
     for name, label in (('neg', '0'), ('pos', '1')):
         log((corpin, corpout, name, label, outfn))
-        print('sentence\tlabel', file=outf)
         fs = '%s/%s/%s/*.txt' % (ind, corpin, name)
         for fn in glob.glob(fs):
             with open(fn, 'r', encoding='utf-8') as f:
