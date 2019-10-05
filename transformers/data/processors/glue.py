@@ -130,7 +130,7 @@ def glue_convert_examples_to_features(examples, tokenizer,
                 InputFeatures(input_ids=input_ids,
                               attention_mask=attention_mask,
                               token_type_ids=token_type_ids,
-                              label=label, guid=guid))
+                              label=label, guid=example.guid))
 
     logger.info("Wrote %d examples total" % len(examples))
     if is_tf_available() and is_tf_dataset:
