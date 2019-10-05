@@ -75,6 +75,8 @@ def rounded(x, digits=3):
     form = "{0:.%sf}" % digits
     def rx(x):
         return form.format(x) if isinstance(x, float) else [rx(y) for y in x] if isinstance(x, list) else x
+    return rx(x)
+
 
 import sys
 def outverbose(s, v=1, seq=0):
