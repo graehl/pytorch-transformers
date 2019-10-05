@@ -423,7 +423,7 @@ def main():
     parser.add_argument('--server_ip', type=str, default='', help="For distant debugging.")
     parser.add_argument('--server_port', type=str, default='', help="For distant debugging.")
     parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
-    parser.add_argument('--verbose_every', type=int, default=100, help="show every nth to stdout for verbose"
+    parser.add_argument('--verbose_every', type=int, default=100, help="show every nth to stdout for verbose")
 
     args = parser.parse_args()
 
