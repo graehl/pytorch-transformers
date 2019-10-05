@@ -130,6 +130,7 @@ def glue_convert_examples_to_features(examples, tokenizer,
                               token_type_ids=token_type_ids,
                               label=label))
 
+    logger.info("Wrote %d examples total" % len(examples))
     if is_tf_available() and is_tf_dataset:
         def gen():
             for ex in features:
@@ -308,6 +309,7 @@ class Sst2Processor(DataProcessor):
             if i == 0:
                 continue
             guid = "%s-%s" % (set_type, i)
+            assert len(line) == 2, '%s %s' % (guid, line)
             text_a = line[0]
             label = line[1]
             examples.append(
