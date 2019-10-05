@@ -270,7 +270,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                     inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
-                outverbose('%s\t%s' % (rounded(logits.tolist()), rounded(labels.tolist()), v=1, seq=nb_eval_steps)
+                outverbose('%s\t%s' % (rounded(logits.tolist()), labels.tolist()), v=1, seq=nb_eval_steps)
                 eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
             if preds is None:
