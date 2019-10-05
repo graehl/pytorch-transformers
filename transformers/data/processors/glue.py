@@ -523,6 +523,7 @@ glue_tasks_num_labels = {
     "qnli": 2,
     "rte": 2,
     "wnli": 2,
+    "imdb": 2,
 }
 
 glue_processors = {
@@ -536,6 +537,7 @@ glue_processors = {
     "qnli": QnliProcessor,
     "rte": RteProcessor,
     "wnli": WnliProcessor,
+    "idmb": Sst2Processor,
 }
 
 glue_output_modes = {
