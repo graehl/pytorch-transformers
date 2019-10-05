@@ -70,6 +70,12 @@ verbosity = 1
 verbose_outfile = None
 stdoutverbose_every = 1
 
+
+def rounded(x, digits=3):
+    form = "{0:.%sf}" % digits
+    def rx(x):
+        return form.format(x) if isinstance(x, float) else [rx(y) for y in x] if isinstance(x, list) else x
+
 import sys
 def outverbose(s, v=1, seq=0):
     s += '\n'
@@ -264,7 +270,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                     inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
-                outverbose('%s\t%s' % (logits.tolist(), labels.tolist()), v=1, seq=nb_eval_steps)
+                outverbose('%s\t%s' % (rounded(logits.tolist()), rounded(labels.tolist()), v=1, seq=nb_eval_steps)
                 eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
             if preds is None:
