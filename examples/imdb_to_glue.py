@@ -18,7 +18,7 @@ def log(x):
 tarf = 'aclImdb_v1.tar.gz'
 assert os.path.isfile(tarf) or subprocess.call(['wget', 'https://ai.stanford.edu/~amaas/data/sentiment/%s' % tarf]) == 0
 ind = 'aclImdb'
-assert os.path.isdir(ind) or subprocess.call(['tar', 'xzf', ind]) == 0
+assert os.path.isdir(ind) or subprocess.call(['tar', 'xzf', tarf]) == 0
 
 outd = 'imdb'
 try:
