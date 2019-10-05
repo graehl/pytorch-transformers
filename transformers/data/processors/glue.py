@@ -537,7 +537,7 @@ glue_processors = {
     "qnli": QnliProcessor,
     "rte": RteProcessor,
     "wnli": WnliProcessor,
-    "idmb": Sst2Processor,
+    "imdb": Sst2Processor,
 }
 
 glue_output_modes = {
@@ -551,4 +551,5 @@ glue_output_modes = {
     "qnli": "classification",
     "rte": "classification",
     "wnli": "classification",
+    "imdb": "classification",
 }
