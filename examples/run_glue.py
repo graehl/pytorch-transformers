@@ -66,6 +66,17 @@ MODEL_CLASSES = {
 }
 
 
+verbosity = 1
+verbose_outfile = None
+
+def verbose(s, v=1):
+    s += '\n'
+    if verbosity >= v:
+        if verbose_outfile is not None:
+            verbose_outfile.write(s)
+        sys.stdout.write(s)
+
+
 def set_seed(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -212,6 +223,8 @@ def evaluate(args, model, tokenizer, prefix=""):
 
     results = {}
     for eval_task, eval_output_dir in zip(eval_task_names, eval_outputs_dirs):
+        global verbose_outfile
+        verbose_outfile = open(os.path.join(eval_output_dir, 'verbose.txt'), 'w', encoding='utf-8')
         eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, evaluate=True)
 
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
@@ -235,14 +248,16 @@ def evaluate(args, model, tokenizer, prefix=""):
             batch = tuple(t.to(args.device) for t in batch)
             inputs = batch_inputs(batch, args.model_type)
             with torch.no_grad():
-                inputs = {'input_ids':      batch[0],
+                labels = batch[3]
+                input_ids = batch[0]
+                inputs = {'input_ids':      input_ids,
                           'attention_mask': batch[1],
-                          'labels':         batch[3]}
+                          'labels':         labels}
                 if args.model_type != 'distilbert':
                     inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
-
+                verbose('%s\t%s' % (logits, labels), v = 1)
                 eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
             if preds is None:
@@ -400,6 +415,8 @@ def main():
                         help="For distributed training: local_rank")
     parser.add_argument('--server_ip', type=str, default='', help="For distant debugging.")
     parser.add_argument('--server_port', type=str, default='', help="For distant debugging.")
+    parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout and verbose.txt")
+
     args = parser.parse_args()
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train and not args.overwrite_output_dir:
