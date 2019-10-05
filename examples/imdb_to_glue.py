@@ -35,6 +35,5 @@ for corpin, corpout in (('test', 'dev'), ('train', 'train')):
         print('sentence\tlabel', file=outf)
         fs = '%s/%s/%s/*.txt' % (ind, corpin, name)
         for fn in glob.glob(fs):
-            sys.stderr.write('.')
             with open(fn, 'r', encoding='utf-8') as f:
                 print('%s\t%s' % (pp(f.read().replace('\n', '')), label), file=outf)
