@@ -68,7 +68,7 @@ MODEL_CLASSES = {
 
 verbosity = 1
 verbose_outfile = None
-stdoutverbose_every = 1
+stdout_verbose_every = 1
 
 
 def rounded(x, digits=3):
@@ -82,7 +82,7 @@ def outverbose(s, v=1, seq=0):
     if verbosity >= v:
         if verbose_outfile is not None:
             verbose_outfile.write(s)
-        if seq % stdoutverbose_every == 0:
+        if seq % stdout_verbose_every == 0:
             sys.stdout.write('#%s: %s' % (seq, s))
 
 
