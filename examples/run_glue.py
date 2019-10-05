@@ -68,13 +68,16 @@ MODEL_CLASSES = {
 
 verbosity = 1
 verbose_outfile = None
+stdoutverbose_every = 1
+
 import sys
-def outverbose(s, v=1):
+def outverbose(s, v=1, seq=0):
     s += '\n'
     if verbosity >= v:
         if verbose_outfile is not None:
             verbose_outfile.write(s)
-        sys.stdout.write(s)
+        if seq % stdoutverbose_every == 0:
+            sys.stdout.write('#%s: %s' % (seq, s))
 
 
 def set_seed(args):
@@ -219,6 +222,8 @@ def train(args, train_dataset, model, tokenizer):
 def evaluate(args, model, tokenizer, prefix="", verbose=1):
     global verbosity
     verbosity = verbose
+    global stdout_verbose_every
+    stdout_verbose_every = args.verbose_every
     # Loop to handle MNLI double evaluation (matched, mis-matched)
     eval_task_names = ("mnli", "mnli-mm") if args.task_name == "mnli" else (args.task_name,)
     eval_outputs_dirs = (args.output_dir, args.output_dir + '-MM') if args.task_name == "mnli" else (args.output_dir,)
@@ -259,7 +264,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                     inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
-                outverbose('%s\t%s' % (logits, labels), v = 1)
+                outverbose('%s\t%s' % (logits.tolist(), labels.tolist()), v=1, seq=nb_eval_steps)
                 eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
             if preds is None:
@@ -417,7 +422,8 @@ def main():
                         help="For distributed training: local_rank")
     parser.add_argument('--server_ip', type=str, default='', help="For distant debugging.")
     parser.add_argument('--server_port', type=str, default='', help="For distant debugging.")
-    parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout and verbose.txt")
+    parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
+    parser.add_argument('--verbose_every', type=int, default=100, help="show every nth to stdout for verbose"
 
     args = parser.parse_args()
 
@@ -522,7 +528,7 @@ def main():
             global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""
             model = model_class.from_pretrained(checkpoint)
             model.to(args.device)
-            result = evaluate(args, model, tokenizer, prefix=global_step)
+            result = evaluate(args, model, tokenizer, prefix=global_step, verbose=args.verbose)
             result = dict((k + '_{}'.format(global_step), v) for k, v in result.items())
             results.update(result)
 

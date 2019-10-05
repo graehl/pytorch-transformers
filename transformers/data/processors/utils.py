@@ -64,7 +64,8 @@ class InputFeatures(object):
         label: Label corresponding to the input
     """
 
-    def __init__(self, input_ids, attention_mask, token_type_ids, label):
+    def __init__(self, input_ids, attention_mask, token_type_ids, label, guid=None):
+        self.guid = guid
         self.input_ids = input_ids
         self.attention_mask = attention_mask
         self.token_type_ids = token_type_ids
