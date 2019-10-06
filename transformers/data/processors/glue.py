@@ -528,6 +528,7 @@ glue_tasks_num_labels = {
     "rte": 2,
     "wnli": 2,
     "imdb": 2,
+    "sentiment", 2,
 }
 
 glue_processors = {
@@ -542,6 +543,7 @@ glue_processors = {
     "rte": RteProcessor,
     "wnli": WnliProcessor,
     "imdb": Sst2Processor,
+    "sentiment": Sst2Processor,
 }
 
 glue_output_modes = {
@@ -556,4 +558,5 @@ glue_output_modes = {
     "rte": "classification",
     "wnli": "classification",
     "imdb": "classification",
+    "sentiment": "classification",
 }

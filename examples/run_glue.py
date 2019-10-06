@@ -227,6 +227,25 @@ def train(args, train_dataset, model, tokenizer):
     return global_step, tr_loss / global_step
 
 
+def dataset_for_texts(texts, model, tokenizer):
+    # Convert to Tensors and build dataset
+    all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    all_attention_mask = torch.tensor([f.attention_mask for f in features], dtype=torch.long)
+    all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
+    all_labels = torch.tensor([f.label for f in features], dtype=torch.long)
+
+    dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels)
+    return dataset
+
+
+def classify(texts, args, model, tokenizer, verbose=1):
+    global verbosity
+    verbosity = verbose
+    global stdout_verbose_every
+    stdout_verbose_every = args.verbose_every
+    dataset = dataset_for_texts(texts, model, tokenizer)
+
+
 def evaluate(args, model, tokenizer, prefix="", verbose=1):
     global verbosity
     verbosity = verbose
@@ -533,7 +552,7 @@ def main():
             checkpoints = list(os.path.dirname(c) for c in sorted(glob.glob(args.output_dir + '/**/' + WEIGHTS_NAME, recursive=True)))
             logging.getLogger("transformers.modeling_utils").setLevel(logging.WARN)  # Reduce logging
         logger.info("Evaluate the following checkpoints: %s", checkpoints)
-        for checkpoint in checkpoints:
+        for i,checkpoint in enumerate(checkpoints):
             global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""
             model = model_class.from_pretrained(checkpoint)
             model.to(args.device)
@@ -541,8 +560,8 @@ def main():
                 result = evaluate(args, model, tokenizer, prefix=global_step, verbose=args.verbose)
                 result = dict((k + '_{}'.format(global_step), v) for k, v in result.items())
                 results.update(result)
-            if args.server:
-                pass
+            if args.server and i+1 == len(checkpoints):
+                server(args, model, tokenizer, verbose=args.verbose)
 
     return results
 
