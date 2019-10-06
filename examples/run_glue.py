@@ -262,7 +262,9 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
     results = {}
     for eval_task, eval_output_dir in zip(eval_task_names, eval_outputs_dirs):
         global verbose_outfile
-        verbose_outfile = open(os.path.join(eval_output_dir, 'verbose.txt'), 'w', encoding='utf-8')
+        vf = os.path.join(eval_output_dir, 'verbose.txt')
+        verbose_outfile = open(vf, 'w', encoding='utf-8')
+        logger.info('writing logits etc to %s' % vf)
         eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, evaluate=True)
 
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
