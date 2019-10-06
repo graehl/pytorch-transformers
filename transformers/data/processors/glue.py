@@ -528,7 +528,7 @@ glue_tasks_num_labels = {
     "rte": 2,
     "wnli": 2,
     "imdb": 2,
-    "sentiment", 2,
+    "sentiment": 2,
 }
 
 glue_processors = {
