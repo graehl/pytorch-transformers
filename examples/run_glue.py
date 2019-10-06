@@ -246,6 +246,10 @@ def classify(texts, args, model, tokenizer, verbose=1):
     dataset = dataset_for_texts(texts, model, tokenizer)
 
 
+def server(args, model, tokenizer, verbose=1):
+    pass #TODO: line(s) server. batch, blank line means flush + partial batch
+
+
 def evaluate(args, model, tokenizer, prefix="", verbose=1):
     global verbosity
     verbosity = verbose
