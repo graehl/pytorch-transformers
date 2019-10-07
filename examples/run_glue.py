@@ -233,20 +233,51 @@ def dataset_for_texts(texts, model, tokenizer):
     all_attention_mask = torch.tensor([f.attention_mask for f in features], dtype=torch.long)
     all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
     all_labels = torch.tensor([f.label for f in features], dtype=torch.long)
-
     dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels)
     return dataset
 
 
 def classify(texts, args, model, tokenizer, verbose=1):
+    if isinstance(texts, str):
+        return classify([texts], args, model, tokenizer, verbose)[0]
     global verbosity
     verbosity = verbose
     global stdout_verbose_every
     stdout_verbose_every = args.verbose_every
     dataset = dataset_for_texts(texts, model, tokenizer)
+    eval_sampler = SequentialSampler(eval_dataset)
+    eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size)
+    return [(0,0) for _ in range(len(texts))]
+
+
+def outserver(x):
+    print(str(x))
 
 
 def server(args, model, tokenizer, verbose=1):
+    args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
+    batchsz = args.eval_batch_size
+    eof = False
+    while not eof:
+        lines = []
+        nc += 1
+        try:
+            while True:
+                line = input()
+                assert line is not None
+                line = line.strip()
+                if len(line) == 0: break
+                lines.append(line)
+                if len(lines) >= batchsz: break
+        except EOFError:
+            eof = True
+        if len(lines) > 0:
+            logits = classify(lines, args, model, tokenizer, verbose)
+            for i, logit in enumerate[logits]:
+                outserver('%s\t%s'%(logit, lines[i]))
+            lines = []
+        elif eof:
+            outserver('')
     pass #TODO: line(s) server. batch, blank line means flush + partial batch
 
 
