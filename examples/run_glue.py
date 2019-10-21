@@ -452,7 +452,7 @@ def main():
                         help="Whether to run training.")
     parser.add_argument("--do_eval", action='store_true',
                         help="Whether to run eval on the dev set.")
-    parser.add_argument("--eval_text", default="",
+    parser.add_argument("--eval_text", default="", type=str,
                         help="Eval lines of text from this file instead of normal dev.tsv; if no label, fake label 0 is used")
     parser.add_argument("--evaluate_during_training", action='store_true',
                         help="Rul evaluation during training at each logging step.")
