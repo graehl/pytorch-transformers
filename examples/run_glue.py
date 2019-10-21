@@ -373,8 +373,14 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     processor = processors[task]()
     output_mode = output_modes[task]
     # Load data features from cache or dataset file
+    devname = 'dev'
+    devtext = args.eval_text
+    if devtext:
+        devname = os.path.basename(devtext)
+    else:
+        devtext = args.data_dir
     cached_features_file = os.path.join(args.data_dir, 'cached_{}_{}_{}_{}'.format(
-        'dev' if evaluate else 'train',
+        devname if evaluate else 'train',
         list(filter(None, args.model_name_or_path.split('/'))).pop(),
         str(args.max_seq_length),
         str(task)))
@@ -387,7 +393,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         if task in ['mnli', 'mnli-mm'] and args.model_type in ['roberta']:
             # HACK(label indices are swapped in RoBERTa pretrained model)
             label_list[1], label_list[2] = label_list[2], label_list[1]
-        examples = processor.get_dev_examples(args.data_dir) if evaluate else processor.get_train_examples(args.data_dir)
+        examples = processor.get_dev_examples(devtext) if evaluate else processor.get_train_examples(args.data_dir)
         features = convert_examples_to_features(examples,
                                                 tokenizer,
                                                 label_list=label_list,
@@ -446,6 +452,8 @@ def main():
                         help="Whether to run training.")
     parser.add_argument("--do_eval", action='store_true',
                         help="Whether to run eval on the dev set.")
+    parser.add_argument("--eval_text", default="",
+                        help="Eval lines of text from this file instead of normal dev.tsv; if no label, fake label 0 is used")
     parser.add_argument("--evaluate_during_training", action='store_true',
                         help="Rul evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',

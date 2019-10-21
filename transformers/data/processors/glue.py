@@ -335,8 +335,11 @@ class Sentiment3Processor(DataProcessor):
 
     def get_dev_examples(self, data_dir):
         """See base class."""
+        devfile = os.path.join(data_dir, "dev.tsv")
+        if not os.path.isfile(devfile):
+            devfile = data_dir
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+            self._read_tsv(devfile), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -347,9 +350,9 @@ class Sentiment3Processor(DataProcessor):
         examples = []
         for (i, line) in enumerate(lines):
             guid = "%s-%s" % (set_type, i)
-            assert len(line) == 2, '%s %s' % (guid, line)
+            assert len(line) <= 2, '%s %s' % (guid, line)
             text_a = line[0]
-            label = line[1]
+            label = line[1] if len(line) == 2 else '0'
             examples.append(
                 InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
         return examples
