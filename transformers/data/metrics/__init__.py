@@ -68,4 +68,4 @@ if _has_sklearn:
         elif task_name == "sts-b":
             return pearson_and_spearman(preds, labels)
         else:
-            return {"acc": simple_accuracy(preds, labels)}
+            return {"acc": simple_accuracy(preds, labels), "f1": f1_score(y_true=labels, y_pred=preds)}
