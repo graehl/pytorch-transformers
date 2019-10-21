@@ -352,7 +352,7 @@ class Sentiment3Processor(DataProcessor):
             guid = "%s-%s" % (set_type, i)
             assert len(line) <= 2, '%s %s' % (guid, line)
             text_a = line[0]
-            label = line[1] if len(line) == 2 else '0'
+            label = line[1] if len(line) == 2 else '2'
             examples.append(
                 InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
         return examples
