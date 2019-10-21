@@ -338,8 +338,12 @@ class Sentiment3Processor(DataProcessor):
         devfile = os.path.join(data_dir, "dev.tsv")
         if not os.path.isfile(devfile):
             devfile = data_dir
-        return self._create_examples(
-            self._read_tsv(devfile), "dev")
+        if os.path.isfile(devfile):
+            devtsv = self._read_tsv(devfile)
+        else:
+            import urllib.request
+            devtsv = urllib.request.urlopen(devtexturl)
+        return self._create_examples(devtsv, "dev")
 
     def get_labels(self):
         """See base class."""
