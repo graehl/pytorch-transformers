@@ -265,7 +265,7 @@ def outserver(x):
 
 
 def server(args, model, tokenizer, verbose=1):
-    args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
+    args.eval_batch_size = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
     batchsz = args.eval_batch_size
     eof = False
     while not eof:
@@ -311,7 +311,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
             os.makedirs(eval_output_dir)
 
-        args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
+        args.eval_batch_size = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
         # Note that DistributedSampler samples randomly
         eval_sampler = SequentialSampler(eval_dataset) if args.local_rank == -1 else DistributedSampler(eval_dataset)
         eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size)
@@ -459,9 +459,9 @@ def main():
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
 
-    parser.add_argument("--per_gpu_train_batch_size", default=8, type=int,
+    parser.add_argument("--per_gpu_train_batch_size", default=8, type=float,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--per_gpu_eval_batch_size", default=8, type=int,
+    parser.add_argument("--per_gpu_eval_batch_size", default=8, type=float,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
