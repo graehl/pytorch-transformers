@@ -36,8 +36,8 @@ if _has_sklearn:
     def simple_accuracy(preds, labels):
         return (preds == labels).mean()
 
-    def nonzero_accuracy(preds, labels):
-        return ((preds == 0) == (labels == 0)).mean()
+    def non2_accuracy(preds, labels):
+        return ((preds == 2) == (labels == 2)).mean()
 
 
     def acc_and_f1(preds, labels):
@@ -71,4 +71,4 @@ if _has_sklearn:
         elif task_name == "sts-b":
             return pearson_and_spearman(preds, labels)
         else:
-            return {"acc": simple_accuracy(preds, labels), "0-vs-non0-acc": nonzero_accuracy(preds, labels), "f1": f1_score(y_true=labels, y_pred=preds)}
+            return {"acc": simple_accuracy(preds, labels), "2acc": non2_accuracy(preds, labels)} # , "f1": f1_score(y_true=labels, y_pred=preds)
