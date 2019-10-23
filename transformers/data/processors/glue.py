@@ -110,7 +110,7 @@ def glue_convert_examples_to_features(examples, tokenizer,
 
         if output_mode == "classification":
             label = example.label
-            assert label in label_map, "%s not in %s" % (label, label_map)
+            assert label in label_map, "'%s' not in %s" % (label, label_map)
             label = label_map[label]
         elif output_mode == "regression":
             label = float(example.label)
