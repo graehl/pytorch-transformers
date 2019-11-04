@@ -365,10 +365,11 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
 
         output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
         with open(output_eval_file, "w") as writer:
-            logger.info("***** Eval results {} *****".format(prefix))
-            for key in sorted(result.keys()):
-                logger.info("  %s = %s", key, str(result[key]))
+            skeys = sorted(result.keys())
+            for key in skeys:
                 writer.write("%s = %s\n" % (key, str(result[key])))
+                logger.info("%s = %.3f"%(key, result[key]))
+            logger.info("***** Eval results {} *****: {}".format(prefix, " ".join("%s = %.3f"%(key, result[key]) for key in skeys)))
 
     return results
 
