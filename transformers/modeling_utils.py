@@ -53,7 +53,7 @@ class PreTrainedModel(nn.Module):
     r""" Base class for all models.
 
         :class:`~transformers.PreTrainedModel` takes care of storing the configuration of the models and handles methods for loading/downloading/saving models
-        as well as a few methods commons to all models to (i) resize the input embeddings and (ii) prune heads in the self-attention heads.
+        as well as a few methods common to all models to (i) resize the input embeddings and (ii) prune heads in the self-attention heads.
 
         Class attributes (overridden by derived classes):
             - ``config_class``: a class derived from :class:`~transformers.PretrainedConfig` to use as configuration class for this model architecture.
@@ -238,7 +238,7 @@ class PreTrainedModel(nn.Module):
         """
         assert os.path.isdir(save_directory), "Saving path should be a directory where the model and configuration can be saved"
 
-        # Only save the model it-self if we are using distributed training
+        # Only save the model itself if we are using distributed training
         model_to_save = self.module if hasattr(self, 'module') else self
 
         # Save configuration file
