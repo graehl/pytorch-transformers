@@ -57,7 +57,7 @@ from .configuration_ctrl import CTRLConfig, CTRL_PRETRAINED_CONFIG_ARCHIVE_MAP
 from .configuration_xlm import XLMConfig, XLM_PRETRAINED_CONFIG_ARCHIVE_MAP
 from .configuration_roberta import RobertaConfig, ROBERTA_PRETRAINED_CONFIG_ARCHIVE_MAP
 from .configuration_distilbert import DistilBertConfig, DISTILBERT_PRETRAINED_CONFIG_ARCHIVE_MAP
-from .configuration_albert import AlbertConfig
+from .configuration_albert import AlbertConfig, ALBERT_PRETRAINED_CONFIG_ARCHIVE_MAP
 
 # Modeling
 if is_torch_available():
@@ -98,6 +98,10 @@ if is_torch_available():
                                 DISTILBERT_PRETRAINED_MODEL_ARCHIVE_MAP)
     from .modeling_encoder_decoder import PreTrainedEncoderDecoder, Model2Model
     from .modeling_albert import (AlbertModel, AlbertForMaskedLM, AlbertForSequenceClassification,
+                                load_tf_weights_in_albert, ALBERT_PRETRAINED_MODEL_ARCHIVE_MAP)
+
+    from .modeling_albert import (AlbertModel, AlbertForMaskedLM, AlbertForSequenceClassification,
+                                AlbertForQuestionAnswering,
                                 load_tf_weights_in_albert, ALBERT_PRETRAINED_MODEL_ARCHIVE_MAP)
 
     # Optimization
@@ -157,6 +161,10 @@ if is_tf_available():
     from .modeling_tf_ctrl import (TFCTRLPreTrainedModel, TFCTRLModel,
                                     TFCTRLLMHeadModel,
                                     TF_CTRL_PRETRAINED_MODEL_ARCHIVE_MAP)
+
+    from .modeling_tf_albert import (TFAlbertPreTrainedModel, TFAlbertModel, TFAlbertForMaskedLM,
+                                     TFAlbertForSequenceClassification,
+                                    TF_ALBERT_PRETRAINED_MODEL_ARCHIVE_MAP)
 
 # TF 2.0 <=> PyTorch conversion utilities
 from .modeling_tf_pytorch_utils import (convert_tf_weight_name_to_pt_weight_name,

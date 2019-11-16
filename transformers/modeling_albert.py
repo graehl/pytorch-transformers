@@ -1,4 +1,3 @@
-
 # coding=utf-8
 # Copyright 2018 Google AI, Google Brain and the HuggingFace Inc. team.
 #
@@ -65,19 +64,19 @@ def load_tf_weights_in_albert(model, config, tf_checkpoint_path):
 
     for name, array in zip(names, arrays):
         print(name)
-    
+
     for name, array in zip(names, arrays):
         original_name = name
         name = name.replace("ffn_1", "ffn")
         name = name.replace("/bert/", "/albert/")
         name = name.replace("ffn/intermediate/output", "ffn_output")
-        name = name.replace("attention_1", "attention")   
+        name = name.replace("attention_1", "attention")
         name = name.replace("cls/predictions", "predictions")
         name = name.replace("transform/", "")
-        name = name.replace("LayerNorm_1", "full_layer_layer_norm")    
-        name = name.replace("LayerNorm", "attention/LayerNorm")    
-        name = name.replace("inner_group_", "albert_layers/") 
-        name = name.replace("group_", "albert_layer_groups/")    
+        name = name.replace("LayerNorm_1", "full_layer_layer_norm")
+        name = name.replace("LayerNorm", "attention/LayerNorm")
+        name = name.replace("inner_group_", "albert_layers/")
+        name = name.replace("group_", "albert_layer_groups/")
         name = name.split('/')
         pointer = model
         for m_name in name:
@@ -138,12 +137,35 @@ class AlbertAttention(BertSelfAttention):
 
         self.output_attentions = config.output_attentions
         self.num_attention_heads = config.num_attention_heads
-        self.hidden_size = config.hidden_size 
+        self.hidden_size = config.hidden_size
         self.attention_head_size = config.hidden_size // config.num_attention_heads
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.pruned_heads = set()
+
+    def prune_heads(self, heads):
+        if len(heads) == 0:
+            return
+        mask = torch.ones(self.num_attention_heads, self.attention_head_size)
+        heads = set(heads) - self.pruned_heads  # Convert to set and emove already pruned heads
+        for head in heads:
+            # Compute how many pruned heads are before the head and move the index accordingly
+            head = head - sum(1 if h < head else 0 for h in self.pruned_heads)
+            mask[head] = 0
+        mask = mask.view(-1).contiguous().eq(1)
+        index = torch.arange(len(mask))[mask].long()
+
+        # Prune linear layers
+        self.query = prune_linear_layer(self.query, index)
+        self.key = prune_linear_layer(self.key, index)
+        self.value = prune_linear_layer(self.value, index)
+        self.dense = prune_linear_layer(self.dense, index, dim=1)
+
+        # Update hyper params and store pruned heads
+        self.num_attention_heads = self.num_attention_heads - len(heads)
+        self.all_head_size = self.attention_head_size * self.num_attention_heads
+        self.pruned_heads = self.pruned_heads.union(heads)
 
     def forward(self, input_ids, attention_mask=None, head_mask=None):
         mixed_query_layer = self.query(input_ids)
@@ -177,11 +199,11 @@ class AlbertAttention(BertSelfAttention):
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         reshaped_context_layer = context_layer.view(*new_context_layer_shape)
-        
+
 
         # Should find a better way to do this
-        w = self.dense.weight.T.view(self.num_attention_heads, self.attention_head_size, self.hidden_size)
-        b = self.dense.bias
+        w = self.dense.weight.t().view(self.num_attention_heads, self.attention_head_size, self.hidden_size).to(context_layer.dtype)
+        b = self.dense.bias.to(context_layer.dtype)
 
         projected_context_layer = torch.einsum("bfnd,ndh->bfh", context_layer, w) + b
         projected_context_layer_dropout = self.dropout(projected_context_layer)
@@ -192,16 +214,16 @@ class AlbertAttention(BertSelfAttention):
 class AlbertLayer(nn.Module):
     def __init__(self, config):
         super(AlbertLayer, self).__init__()
-        
+
         self.config = config
         self.full_layer_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.attention = AlbertAttention(config)
-        self.ffn = nn.Linear(config.hidden_size, config.intermediate_size) 
+        self.ffn = nn.Linear(config.hidden_size, config.intermediate_size)
         self.ffn_output = nn.Linear(config.intermediate_size, config.hidden_size)
         self.activation = ACT2FN[config.hidden_act]
 
     def forward(self, hidden_states, attention_mask=None, head_mask=None):
-        attention_output = self.attention(hidden_states, attention_mask)
+        attention_output = self.attention(hidden_states, attention_mask, head_mask)
         ffn_output = self.ffn(attention_output[0])
         ffn_output = self.activation(ffn_output)
         ffn_output = self.ffn_output(ffn_output)
@@ -213,7 +235,7 @@ class AlbertLayer(nn.Module):
 class AlbertLayerGroup(nn.Module):
     def __init__(self, config):
         super(AlbertLayerGroup, self).__init__()
-        
+
         self.output_attentions = config.output_attentions
         self.output_hidden_states = config.output_hidden_states
         self.albert_layers = nn.ModuleList([AlbertLayer(config) for _ in range(config.inner_group_num)])
@@ -222,8 +244,8 @@ class AlbertLayerGroup(nn.Module):
         layer_hidden_states = ()
         layer_attentions = ()
 
-        for albert_layer in self.albert_layers:
-            layer_output = albert_layer(hidden_states, attention_mask, head_mask)
+        for layer_index, albert_layer in enumerate(self.albert_layers):
+            layer_output = albert_layer(hidden_states, attention_mask, head_mask[layer_index])
             hidden_states = layer_output[0]
 
             if self.output_attentions:
@@ -243,7 +265,7 @@ class AlbertLayerGroup(nn.Module):
 class AlbertTransformer(nn.Module):
     def __init__(self, config):
         super(AlbertTransformer, self).__init__()
-        
+
         self.config = config
         self.output_attentions = config.output_attentions
         self.output_hidden_states = config.output_hidden_states
@@ -258,10 +280,17 @@ class AlbertTransformer(nn.Module):
         if self.output_hidden_states:
             all_hidden_states = (hidden_states,)
 
-        for layer_idx in range(self.config.num_hidden_layers):
-            group_idx = int(layer_idx / self.config.num_hidden_layers * self.config.num_hidden_groups)
-            layer_group_output = self.albert_layer_groups[group_idx](hidden_states, attention_mask, head_mask)  
-        
+        for i in range(self.config.num_hidden_layers):
+            # Number of layers in a hidden group
+            layers_per_group = int(self.config.num_hidden_layers / self.config.num_hidden_groups)
+
+            # Index of the hidden group
+            group_idx = int(i / (self.config.num_hidden_layers / self.config.num_hidden_groups))
+
+            # Index of the layer inside the group
+            layer_idx = int(i - group_idx * layers_per_group)
+
+            layer_group_output = self.albert_layer_groups[group_idx](hidden_states, attention_mask, head_mask[group_idx*layers_per_group:(group_idx+1)*layers_per_group])
             hidden_states = layer_group_output[0]
 
             if self.output_attentions:
@@ -270,14 +299,13 @@ class AlbertTransformer(nn.Module):
             if self.output_hidden_states:
                 all_hidden_states = all_hidden_states + (hidden_states,)
 
-        
+
         outputs = (hidden_states,)
         if self.output_hidden_states:
             outputs = outputs + (all_hidden_states,)
         if self.output_attentions:
             outputs = outputs + (all_attentions,)
         return outputs  # last-layer hidden state, (all hidden states), (all attentions)
-
 
 
 class AlbertPreTrainedModel(PreTrainedModel):
@@ -317,7 +345,7 @@ ALBERT_START_DOCSTRING = r"""    The ALBERT model was proposed in
         https://pytorch.org/docs/stable/nn.html#module
 
     Parameters:
-        config (:class:`~transformers.AlbertConfig`): Model configuration class with all the parameters of the model. 
+        config (:class:`~transformers.AlbertConfig`): Model configuration class with all the parameters of the model.
             Initializing with a config file does not load the weights associated with the model, only the configuration.
             Check out the :meth:`~transformers.PreTrainedModel.from_pretrained` method to load the model weights.
 """
@@ -331,13 +359,13 @@ ALBERT_INPUTS_DOCSTRING = r"""
             (a) For sequence pairs:
 
                 ``tokens:         [CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]``
-                
+
                 ``token_type_ids:   0   0  0    0    0     0       0   0   1  1  1  1   1   1``
 
             (b) For single sequences:
 
                 ``tokens:         [CLS] the dog is hairy . [SEP]``
-                
+
                 ``token_type_ids:   0   0   0   0  0     0   0``
 
             Albert is a model with absolute position embeddings so it's usually advised to pad the inputs on
@@ -408,6 +436,25 @@ class AlbertModel(AlbertPreTrainedModel):
         new_embeddings = self._get_resized_embeddings(old_embeddings, new_num_tokens)
         self.embeddings.word_embeddings = new_embeddings
         return self.embeddings.word_embeddings
+
+    def _prune_heads(self, heads_to_prune):
+        """ Prunes heads of the model.
+            heads_to_prune: dict of {layer_num: list of heads to prune in this layer}
+            ALBERT has a different architecture in that its layers are shared across groups, which then has inner groups.
+            If an ALBERT model has 12 hidden layers and 2 hidden groups, with two inner groups, there
+            is a total of 4 different layers.
+
+            These layers are flattened: the indices [0,1] correspond to the two inner groups of the first hidden layer,
+            while [2,3] correspond to the two inner groups of the second hidden layer.
+
+            Any layer with in index other than [0,1,2,3] will result in an error.
+            See base class PreTrainedModel for more information about head pruning
+        """
+        for layer, heads in heads_to_prune.items():
+            group_idx = int(layer / self.config.inner_group_num)
+            inner_group_idx = int(layer - group_idx * self.config.inner_group_num)
+            self.encoder.albert_layer_groups[group_idx].albert_layers[inner_group_idx].attention.prune_heads(heads)
+
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None):
         if attention_mask is None:
@@ -502,7 +549,7 @@ class AlbertForMaskedLM(AlbertPreTrainedModel):
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None,
                 masked_lm_labels=None):
-        outputs = self.albert(input_ids, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None)
+        outputs = self.albert(input_ids, attention_mask, token_type_ids, position_ids, head_mask)
         sequence_outputs = outputs[0]
 
         prediction_scores = self.predictions(sequence_outputs)
@@ -566,7 +613,7 @@ class AlbertForSequenceClassification(AlbertPreTrainedModel):
         outputs = self.albert(input_ids,
                             attention_mask=attention_mask,
                             token_type_ids=token_type_ids,
-                            position_ids=position_ids, 
+                            position_ids=position_ids,
                             head_mask=head_mask)
 
         pooled_output = outputs[1]
@@ -587,3 +634,93 @@ class AlbertForSequenceClassification(AlbertPreTrainedModel):
             outputs = (loss,) + outputs
 
         return outputs  # (loss), logits, (hidden_states), (attentions)
+
+
+@add_start_docstrings("""Albert Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear layers on top of
+    the hidden-states output to compute `span start logits` and `span end logits`). """,
+    ALBERT_START_DOCSTRING, ALBERT_INPUTS_DOCSTRING)
+class AlbertForQuestionAnswering(AlbertPreTrainedModel):
+    r"""
+        **start_positions**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size,)``:
+            Labels for position (index) of the start of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`).
+            Position outside of the sequence are not taken into account for computing the loss.
+        **end_positions**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size,)``:
+            Labels for position (index) of the end of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`).
+            Position outside of the sequence are not taken into account for computing the loss.
+
+    Outputs: `Tuple` comprising various elements depending on the configuration (config) and inputs:
+        **loss**: (`optional`, returned when ``labels`` is provided) ``torch.FloatTensor`` of shape ``(1,)``:
+            Total span extraction loss is the sum of a Cross-Entropy for the start and end positions.
+        **start_scores**: ``torch.FloatTensor`` of shape ``(batch_size, sequence_length,)``
+            Span-start scores (before SoftMax).
+        **end_scores**: ``torch.FloatTensor`` of shape ``(batch_size, sequence_length,)``
+            Span-end scores (before SoftMax).
+        **hidden_states**: (`optional`, returned when ``config.output_hidden_states=True``)
+            list of ``torch.FloatTensor`` (one for the output of each layer + the output of the embeddings)
+            of shape ``(batch_size, sequence_length, hidden_size)``:
+            Hidden-states of the model at the output of each layer plus the initial embedding outputs.
+        **attentions**: (`optional`, returned when ``config.output_attentions=True``)
+            list of ``torch.FloatTensor`` (one for each layer) of shape ``(batch_size, num_heads, sequence_length, sequence_length)``:
+            Attentions weights after the attention softmax, used to compute the weighted average in the self-attention heads.
+
+    Examples::
+
+        tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
+        model = AlbertForQuestionAnswering.from_pretrained('albert-base-v2')
+        question, text = "Who was Jim Henson?", "Jim Henson was a nice puppet"
+        input_text = "[CLS] " + question + " [SEP] " + text + " [SEP]"
+        input_ids = tokenizer.encode(input_text)
+        token_type_ids = [0 if i <= input_ids.index(102) else 1 for i in range(len(input_ids))]
+        start_scores, end_scores = model(torch.tensor([input_ids]), token_type_ids=torch.tensor([token_type_ids]))
+        all_tokens = tokenizer.convert_ids_to_tokens(input_ids)
+        print(' '.join(all_tokens[torch.argmax(start_scores) : torch.argmax(end_scores)+1]))
+        # a nice puppet
+
+
+    """
+    def __init__(self, config):
+        super(AlbertForQuestionAnswering, self).__init__(config)
+        self.num_labels = config.num_labels
+
+        self.albert = AlbertModel(config)
+        self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
+
+        self.init_weights()
+
+    def forward(self, input_ids, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None,
+                start_positions=None, end_positions=None):
+
+        outputs = self.albert(input_ids,
+                            attention_mask=attention_mask,
+                            token_type_ids=token_type_ids,
+                            position_ids=position_ids,
+                            head_mask=head_mask)
+
+        sequence_output = outputs[0]
+
+        logits = self.qa_outputs(sequence_output)
+        start_logits, end_logits = logits.split(1, dim=-1)
+        start_logits = start_logits.squeeze(-1)
+        end_logits = end_logits.squeeze(-1)
+
+        outputs = (start_logits, end_logits,) + outputs[2:]
+        if start_positions is not None and end_positions is not None:
+            # If we are on multi-GPU, split add a dimension
+            if len(start_positions.size()) > 1:
+                start_positions = start_positions.squeeze(-1)
+            if len(end_positions.size()) > 1:
+                end_positions = end_positions.squeeze(-1)
+            # sometimes the start/end positions are outside our model inputs, we ignore these terms
+            ignored_index = start_logits.size(1)
+            start_positions.clamp_(0, ignored_index)
+            end_positions.clamp_(0, ignored_index)
+
+            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+            start_loss = loss_fct(start_logits, start_positions)
+            end_loss = loss_fct(end_logits, end_positions)
+            total_loss = (start_loss + end_loss) / 2
+            outputs = (total_loss,) + outputs
+
+        return outputs  # (loss), start_logits, end_logits, (hidden_states), (attentions)
