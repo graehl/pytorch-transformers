@@ -344,7 +344,7 @@ class Sentiment3Processor(DataProcessor):
             devfile = data_dir
         if os.path.isfile(devfile):
             devtsv = self._read_tsv(devfile)
-        elif self.__devtexturl:
+        else:
             import urllib.request
             devtsv = urllib.request.urlopen(self.__devtexturl)
         return self._create_examples(devtsv, "dev")
