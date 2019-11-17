@@ -343,6 +343,7 @@ class Sentiment3Processor(DataProcessor):
             devtsv = self._read_tsv(devfile)
         else:
             import urllib.request
+            import re
             blanks = re.compile(r'\s+')
             with urllib.request.urlopen(devfile) as response:
                 lines = []
