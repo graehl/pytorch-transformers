@@ -386,11 +386,11 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     devname = 'dev'
     devtext = args.eval_text
     processor.__devtexturl = devtext
+    logger.info("datadir=%s devtexturl=%s" % (args.data_dir, devtext))
     if devtext:
         devname = os.path.basename(devtext)
     else:
         devtext = args.data_dir
-    logger.info("datadir=%s devtexturl=%s" % (devtext, devtext))
     cached_features_file = os.path.join(args.data_dir, 'cached_{}_{}_{}_{}'.format(
         devname if evaluate else 'train',
         list(filter(None, args.model_name_or_path.split('/'))).pop(),
