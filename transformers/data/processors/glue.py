@@ -343,7 +343,8 @@ class Sentiment3Processor(DataProcessor):
             devtsv = self._read_tsv(devfile)
         else:
             import urllib.request
-            devtsv = urllib.request.urlopen(devfile)
+            with urllib.request.urlopen(devfile) as f:
+                devtsv = self._read_tsv(f)
         return self._create_examples(devtsv, "dev")
 
     def get_labels(self):
