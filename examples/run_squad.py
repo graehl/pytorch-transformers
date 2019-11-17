@@ -22,6 +22,7 @@ import logging
 import os
 import random
 import glob
+import timeit
 
 import numpy as np
 import torch
@@ -42,10 +43,9 @@ from transformers import (WEIGHTS_NAME, BertConfig,
                                   XLMTokenizer, XLNetConfig,
                                   XLNetForQuestionAnswering,
                                   XLNetTokenizer,
-                                  DistilBertConfig, DistilBertForQuestionAnswering, DistilBertTokenizer,
-                                  AlbertConfig, AlbertForQuestionAnswering, AlbertTokenizer)
+                                  DistilBertConfig, DistilBertForQuestionAnswering, DistilBertTokenizer)
 
-from transformers import AdamW, WarmupLinearSchedule
+from transformers import AdamW, get_linear_schedule_with_warmup
 
 from utils_squad import (read_squad_examples, convert_examples_to_features,
                          RawResult, write_predictions,
@@ -65,8 +65,7 @@ MODEL_CLASSES = {
     'bert': (BertConfig, BertForQuestionAnswering, BertTokenizer),
     'xlnet': (XLNetConfig, XLNetForQuestionAnswering, XLNetTokenizer),
     'xlm': (XLMConfig, XLMForQuestionAnswering, XLMTokenizer),
-    'distilbert': (DistilBertConfig, DistilBertForQuestionAnswering, DistilBertTokenizer),
-    'albert': (AlbertConfig, AlbertForQuestionAnswering, AlbertTokenizer)
+    'distilbert': (DistilBertConfig, DistilBertForQuestionAnswering, DistilBertTokenizer)
 }
 
 def set_seed(args):
@@ -101,7 +100,7 @@ def train(args, train_dataset, model, tokenizer):
         {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
-    scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=t_total)
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total)
     if args.fp16:
         try:
             from apex import amp
@@ -129,7 +128,7 @@ def train(args, train_dataset, model, tokenizer):
     logger.info("  Gradient Accumulation steps = %d", args.gradient_accumulation_steps)
     logger.info("  Total optimization steps = %d", t_total)
 
-    global_step = 1
+    global_step = 0
     tr_loss, logging_loss = 0.0, 0.0
     model.zero_grad()
     train_iterator = trange(int(args.num_train_epochs), desc="Epoch", disable=args.local_rank not in [-1, 0])
@@ -218,11 +217,16 @@ def evaluate(args, model, tokenizer, prefix=""):
     eval_sampler = SequentialSampler(dataset) if args.local_rank == -1 else DistributedSampler(dataset)
     eval_dataloader = DataLoader(dataset, sampler=eval_sampler, batch_size=args.eval_batch_size)
 
+    # multi-gpu evaluate
+    if args.n_gpu > 1:
+        model = torch.nn.DataParallel(model)
+
     # Eval!
     logger.info("***** Running evaluation {} *****".format(prefix))
     logger.info("  Num examples = %d", len(dataset))
     logger.info("  Batch size = %d", args.eval_batch_size)
     all_results = []
+    start_time = timeit.default_timer()
     for batch in tqdm(eval_dataloader, desc="Evaluating"):
         model.eval()
         batch = tuple(t.to(args.device) for t in batch)
@@ -254,6 +258,9 @@ def evaluate(args, model, tokenizer, prefix=""):
                                    start_logits = to_list(outputs[0][i]),
                                    end_logits   = to_list(outputs[1][i]))
             all_results.append(result)
+
+    evalTime = timeit.default_timer() - start_time
+    logger.info("  Evaluation done in total %f secs (%f sec per example)", evalTime, evalTime / len(dataset))
 
     # Compute predictions
     output_prediction_file = os.path.join(args.output_dir, "predictions_{}.json".format(prefix))
@@ -417,7 +424,7 @@ def main():
 
     parser.add_argument('--logging_steps', type=int, default=50,
                         help="Log every X updates steps.")
-    parser.add_argument('--save_steps', type=int, default=500,
+    parser.add_argument('--save_steps', type=int, default=50,
                         help="Save checkpoint every X updates steps.")
     parser.add_argument("--eval_all_checkpoints", action='store_true',
                         help="Evaluate all checkpoints starting with the same prefix as model_name ending and ending with step number")
@@ -479,9 +486,15 @@ def main():
 
     args.model_type = args.model_type.lower()
     config_class, model_class, tokenizer_class = MODEL_CLASSES[args.model_type]
-    config = config_class.from_pretrained(args.config_name if args.config_name else args.model_name_or_path)
-    tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name if args.tokenizer_name else args.model_name_or_path, do_lower_case=args.do_lower_case)
-    model = model_class.from_pretrained(args.model_name_or_path, from_tf=bool('.ckpt' in args.model_name_or_path), config=config, force_download=True)
+    config = config_class.from_pretrained(args.config_name if args.config_name else args.model_name_or_path,
+                                          cache_dir=args.cache_dir if args.cache_dir else None)
+    tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name if args.tokenizer_name else args.model_name_or_path,
+                                                do_lower_case=args.do_lower_case,
+                                                cache_dir=args.cache_dir if args.cache_dir else None)
+    model = model_class.from_pretrained(args.model_name_or_path,
+                                        from_tf=bool('.ckpt' in args.model_name_or_path),
+                                        config=config,
+                                        cache_dir=args.cache_dir if args.cache_dir else None)
 
     if args.local_rank == 0:
         torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
@@ -524,7 +537,7 @@ def main():
         torch.save(args, os.path.join(args.output_dir, 'training_args.bin'))
 
         # Load a trained model and vocabulary that you have fine-tuned
-        model = model_class.from_pretrained(args.output_dir, force_download=True)
+        model = model_class.from_pretrained(args.output_dir)
         tokenizer = tokenizer_class.from_pretrained(args.output_dir, do_lower_case=args.do_lower_case)
         model.to(args.device)
 
@@ -542,7 +555,7 @@ def main():
         for checkpoint in checkpoints:
             # Reload the model
             global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""
-            model = model_class.from_pretrained(checkpoint, force_download=True)
+            model = model_class.from_pretrained(checkpoint)
             model.to(args.device)
 
             # Evaluate
