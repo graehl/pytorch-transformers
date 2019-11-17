@@ -344,9 +344,9 @@ class Sentiment3Processor(DataProcessor):
         else:
             import urllib.request
             blanks = re.compile(r'\s+')
-            with urllib.request.urlopen(devfile) as f:
+            with urllib.request.urlopen(devfile) as response:
                 lines = []
-                for line in f:
+                for line in response.readlines():
                     line = line.strip()
                     if len(line) < 2: continue
                     if line[-2] == '\t' and line[-1] in ('0', '1', '2'):
