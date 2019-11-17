@@ -322,9 +322,6 @@ class Sst2Processor(DataProcessor):
 class Sentiment3Processor(DataProcessor):
     """Processor for the SST-2 data set (GLUE version)."""
 
-    def __init__(self):
-        self.__devtexturl = None
-
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
         return InputExample(tensor_dict['idx'].numpy(),
@@ -340,14 +337,13 @@ class Sentiment3Processor(DataProcessor):
     def get_dev_examples(self, data_dir):
         """See base class."""
         devfile = os.path.join(data_dir, "dev.tsv")
-        logger.info("devfile=%s devtexturl=%s" % (devfile, self.__devtexturl))
         if not os.path.isfile(devfile):
             devfile = data_dir
         if os.path.isfile(devfile):
             devtsv = self._read_tsv(devfile)
         else:
             import urllib.request
-            devtsv = urllib.request.urlopen(self.__devtexturl)
+            devtsv = urllib.request.urlopen(devfile)
         return self._create_examples(devtsv, "dev")
 
     def get_labels(self):
