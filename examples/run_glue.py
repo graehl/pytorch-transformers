@@ -381,15 +381,16 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         torch.distributed.barrier()  # Make sure only the first process in distributed training process the dataset, and the others will use the cache
 
     processor = processors[task]()
-    processor.__devtexturl = args.eval_text
     output_mode = output_modes[task]
     # Load data features from cache or dataset file
     devname = 'dev'
     devtext = args.eval_text
+    processor.__devtexturl = devtext
     if devtext:
         devname = os.path.basename(devtext)
     else:
         devtext = args.data_dir
+    logger.info("datadir=%s devtexturl=%s" % (devtext, devtext))
     cached_features_file = os.path.join(args.data_dir, 'cached_{}_{}_{}_{}'.format(
         devname if evaluate else 'train',
         list(filter(None, args.model_name_or_path.split('/'))).pop(),

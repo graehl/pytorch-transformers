@@ -340,6 +340,7 @@ class Sentiment3Processor(DataProcessor):
     def get_dev_examples(self, data_dir):
         """See base class."""
         devfile = os.path.join(data_dir, "dev.tsv")
+        logger.info("devfile=%s devtexturl=%s" % (devfile, self.__devtexturl))
         if not os.path.isfile(devfile):
             devfile = data_dir
         if os.path.isfile(devfile):
