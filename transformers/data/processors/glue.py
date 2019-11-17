@@ -343,8 +343,17 @@ class Sentiment3Processor(DataProcessor):
             devtsv = self._read_tsv(devfile)
         else:
             import urllib.request
+            blanks = re.compile(r'\s+')
             with urllib.request.urlopen(devfile) as f:
-                devtsv = self._read_tsv(f)
+                lines = []
+                for line in f:
+                    line = line.strip()
+                    if len(line) < 2: continue
+                    if line[-2] == '\t' and line[-1] in ('0', '1', '2'):
+                        c = line[-1]
+                    line = blanks.sub(' ', line)
+                    lines.append((line, '2'))
+                devtsv = lines
         return self._create_examples(devtsv, "dev")
 
     def get_labels(self):
