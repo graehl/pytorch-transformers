@@ -348,6 +348,7 @@ class Sentiment3Processor(DataProcessor):
             with urllib.request.urlopen(devfile) as response:
                 lines = []
                 for line in response.readlines():
+                    line = line.decode('utf-8') if isinstance(line, bytes) else line
                     line = line.strip()
                     if len(line) < 2: continue
                     if line[-2] == '\t' and line[-1] in ('0', '1', '2'):
