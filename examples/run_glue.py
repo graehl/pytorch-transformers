@@ -94,9 +94,9 @@ def rounded(x, digits=3):
 import sys
 def outverbose(s, v=1, seq=0):
     s += '\n'
+    if verbose_outfile is not None:
+        verbose_outfile.write(s)
     if verbosity >= v:
-        if verbose_outfile is not None:
-            verbose_outfile.write(s)
         if seq % stdout_verbose_every == 0:
             sys.stdout.write('#%s: %s' % (seq, s))
 
@@ -378,9 +378,10 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             s = sorted(c, reverse=True)
             for topi, x in enumerate(s):
                 conf, i, logit, example = x
-                desc = '%s %s [gold %s #%s] %s %s' % (rounded(logit), j, example.label, i, rounded(conf), example.texts())
+                desc = '%s %s [#%s gold:%s] %s %s' % (rounded(logit), j, example.label, i, rounded(conf), example.texts())
                 if topi < outmax:
                     sys.stdout.write(desc + '\n')
+                outverbose(desc, v=2, seq=topi)
 
         eval_loss = eval_loss / nb_eval_steps
         if args.output_mode == "classification":
@@ -496,7 +497,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         logger.info("Loading examples from cached file %s", cached_examples_file)
         examples = [InputExample(x[0], x[1], x[2], x[3]) for x in load_tsv(cached_examples_file)]
     else:
-        logger.info("Creating features from dataset file at %s", args.data_dir)
+        logger.info("Creating features from dataset file at %s %s", args.data_dir, 'devtext=%s' % devtext if evaluate else '')
         label_list = processor.get_labels()
         if task in ['mnli', 'mnli-mm'] and args.model_type in ['roberta']:
             # HACK(label indices are swapped in RoBERTa pretrained model)
