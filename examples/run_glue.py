@@ -438,14 +438,22 @@ def load_eval_examples(args, task, tokenizer, text=None, evaluate=True):
     return (dataset, examples)
 
 
+import re
+nonspaceblanks = re.compile(r'[\n\r\t]')
+
+
+def justspaces(x):
+    return nonspaceblanks.sub(' ', str(x))
+
+
 def save_tsv(examples, f):
     if isinstance(f, str):
         f = open(f, 'w', encoding='utf-8')
     for x in examples:
         if isinstance(x, str):
-            f.write(x)
+            f.write(justspaces(x.rstrip('\n')))
         else:
-            f.write('\t'.join(map(str, x)))
+            f.write('\t'.join(map(justspaces, x)))
         f.write('\n')
     f.close()
 
@@ -455,7 +463,7 @@ def load_tsv(f):
         f = open(f, 'r', encoding='utf-8')
     examples = []
     for line in f:
-        examples.append(line.split('\t'))
+        examples.append(line.rstrip('\n').rstrip('\r').split('\t'))
     f.close()
     return examples
 
