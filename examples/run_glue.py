@@ -316,7 +316,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         verbose_outfile = open(vf, 'w', encoding='utf-8')
         logger.info('writing logits etc to %s' % vf)
         eval_dataset, eval_examples = load_and_cache_examples(args, eval_task, tokenizer, evaluate=True)
-
+        logger.info(" #data=%s #examples=%s first=%s" % (len(eval_dataset), len(eval_examples), eval_examples[:1]))
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
             os.makedirs(eval_output_dir)
 
@@ -342,16 +342,17 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             with torch.no_grad():
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
+                eval_loss += tmp_eval_loss.mean().item()
                 outverbose('%s\t%s' % (rounded(logits.tolist()), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
                 for l in logits:
                     confmax = max(l)
+                    if i > len(eval_examples): break
                     for j in (0, 1):
                         conf = l[j] - confmax
                         if conf > 3:
                             outverbose('%s %s' % (conf, eval_examples[i]), v=1)
                         confs[j].append((conf, i, logits, eval_examples[i]))
                     i += 1
-                eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
             if preds is None:
                 preds = logits.detach().cpu().numpy()
