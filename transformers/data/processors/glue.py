@@ -359,7 +359,7 @@ class Sentiment3Processor(DataProcessor):
         else:
             lines = data_dir_or_url_or_text
             texts = lines.splitlines(keepends=False) if isinstance(lines, str) else lines
-            devtsv = [(line, '2') for line in texts]
+            devtsv = [(x, '2') for x in [line.strip() for line in lines] if len(x) > 0]
         return self._create_examples(devtsv, "dev")
 
     def get_labels(self):
