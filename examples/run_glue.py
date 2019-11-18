@@ -344,13 +344,13 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 tmp_eval_loss, logits = outputs[:2]
                 outverbose('%s\t%s' % (rounded(logits.tolist()), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
                 for l in logits:
-                    i += 1
                     confmax = max(l)
                     for j in (0, 1):
                         conf = l[j] - confmax
                         if conf > 3:
                             outverbose('%s %s' % (conf, eval_examples[i]), v=1)
                         confs[j].append((conf, i, logits, eval_examples[i]))
+                    i += 1
                 eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
             if preds is None:
