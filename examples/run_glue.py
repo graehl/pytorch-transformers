@@ -361,7 +361,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
                 out_label_ids = np.append(out_label_ids, inputs['labels'].detach().cpu().numpy(), axis=0)
         for j, c in enumerate(confs):
-            s = c.sorted(reverse=True)
+            s = sorted(c, reverse=True)
             outmax = 20
             for topi, x in enumerate(s):
                 conf, i, logits, example = x
