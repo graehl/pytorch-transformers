@@ -338,7 +338,7 @@ from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 
 
 def text_sentences(text):
-    if isinstance(line, bytes):
+    if isinstance(text, bytes):
         text = text.decode('utf-8')
     lines = []
     for line in text.splitlines(keepends=False) if isinstance(text, str) else text:
