@@ -465,7 +465,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         str(args.max_seq_length),
         str(task))
     cached_features_file = os.path.join(args.data_dir, cache)
-    cached_examples_file = os.path.join(args.data_dir, cache + '_examples')
+    cached_examples_file = os.path.join(args.data_dir, cache + '.examples.tsv')
     if os.path.exists(cached_features_file) and os.path.exists(cached_examples_file) and not args.overwrite_cache:
         logger.info("Loading features from cached file %s", cached_features_file)
         features = torch.load(cached_features_file)
