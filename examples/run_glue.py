@@ -365,7 +365,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             outmax = 20
             for topi, x in enumerate(s):
                 conf, i, logits, example = x
-                desc = '%s %s %s %s' % (logits, j, conf, example[0])
+                desc = '%s %s %s %s' % (logits, j, conf, example.texts())
                 if topi < outmax:
                     sys.stdout.write(desc + '\n')
                 outverbose(desc, v=1, seq=topi)
