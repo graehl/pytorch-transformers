@@ -348,13 +348,19 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 logs = logits.tolist()
                 outverbose('%s\t%s' % (rounded(logs), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
                 for l in logs:
-                    confmax = max(l)
                     if i >= len(eval_examples): break
-                    for j in (0, 1):
+                    ex = eval_examples[i]
+                    minl = min(l)
+                    for j in range(len(confs)):
+                        confj = l[j]
+                        l[j] = minl
+                        confmax = max(l)
+                        l[j] = confj
                         conf = l[j] - confmax
                         if conf > 3:
-                            outverbose('%s %s' % (conf, eval_examples[i]), v=1)
-                        confs[j].append((conf, i, l, eval_examples[i]))
+                            outverbose('%s %s' % (conf, ex), v=1)
+                        if conf > 0:
+                            confs[j].append((conf, i, l, ex))
                     i += 1
             nb_eval_steps += 1
             if preds is None:
@@ -365,7 +371,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 out_label_ids = np.append(out_label_ids, inputs['labels'].detach().cpu().numpy(), axis=0)
         for j, c in enumerate(confs):
             s = sorted(c, reverse=True)
-            outmax = 20
+            outmax = 5
             for topi, x in enumerate(s):
                 conf, i, logit, example = x
                 desc = '%s %s %s %s' % (logit, j, conf, example.texts())
