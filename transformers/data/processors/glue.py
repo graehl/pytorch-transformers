@@ -347,8 +347,7 @@ def url_sentences(url):
             if len(line) <= 1: continue
             line = blanksre.sub(' ', line)
             lines.append(line)
-            punkt.train(line, finalize=False)
-        punkt.finalize_training()
+        punkt.train('\n'.join(lines))
         r = []
         for line in lines:
             r.append(punkt(line))
