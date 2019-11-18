@@ -361,7 +361,6 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                         conf = l[j] - confmax
                         if conf > 0:
                             t = ex.texts()
-                            assert isinstance(t, str) t
                             dups[t] += 1
                             if dups[t] == 1:
                                 confs[j].append((conf, i, l, ex))
