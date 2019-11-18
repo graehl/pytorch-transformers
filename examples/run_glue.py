@@ -434,7 +434,8 @@ def save_tsv(examples, f):
 
 
 def load_tsv(f):
-    f = open(f, 'r', encoding='utf-8') if isinstance(f, str)
+    if isinstance(f, str):
+        f = open(f, 'r', encoding='utf-8')
     examples = []
     for line in f:
         if len(line) < 2: continue
