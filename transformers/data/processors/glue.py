@@ -358,7 +358,7 @@ class Sentiment3Processor(DataProcessor):
                 devtsv = lines
         else:
             lines = data_dir_or_url_or_text
-            texts = lines.splitlines(keepends=False) if isinstance(lines, str)
+            texts = lines.splitlines(keepends=False) if isinstance(lines, str) else lines
             devtsv = [(line, '2') for line in texts]
         return self._create_examples(devtsv, "dev")
 
