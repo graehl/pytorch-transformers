@@ -350,7 +350,7 @@ def url_sentences(url):
         punkt.train('\n'.join(lines))
         r = []
         for line in lines:
-            r.append(punkt(line))
+            r.append(punkt.tokenize(line))
         return r
 
 
