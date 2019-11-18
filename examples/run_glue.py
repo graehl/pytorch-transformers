@@ -58,6 +58,8 @@ from transformers import glue_compute_metrics as compute_metrics
 from transformers import glue_output_modes as output_modes
 from transformers import glue_processors as processors
 from transformers import glue_convert_examples_to_features as convert_examples_to_features
+from transformers import InputExample as InputExample
+
 
 mininterval = 10
 
@@ -442,8 +444,6 @@ def load_tsv(f):
         examples.append(line.split('\t'))
     f.close()
     return examples
-
-from .data.processors.utils import InputExample
 
 def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     if args.local_rank not in [-1, 0] and not evaluate:
