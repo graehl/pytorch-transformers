@@ -503,7 +503,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
             logger.info("Saving features into cached file %s", cached_features_file)
             torch.save(features, cached_features_file)
             logger.info("Saving examples into cached file %s", cached_examples_file)
-            save_tsv(((x.guid, x.text_a, x.text_b, x.label) for x in examples), cached_examples_file)
+            save_tsv(((x.guid, x.text_a, '' if x.text_b is None else x.text_b, x.label) for x in examples), cached_examples_file)
 
 
     if args.local_rank == 0 and not evaluate:
