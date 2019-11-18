@@ -470,7 +470,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     if os.path.exists(cached_features_file) and os.path.exists(cached_examples_file) and not args.overwrite_cache:
         logger.info("Loading features from cached file %s", cached_features_file)
         features = torch.load(cached_features_file)
-        examples = load_tsv(cached_examples_file)
+        examples = [transformers.data.processors.utils.InputExample(x[0], x[1], x[2], x[3]) for x in load_tsv(cached_examples_file)]
     else:
         logger.info("Creating features from dataset file at %s", args.data_dir)
         label_list = processor.get_labels()
@@ -491,7 +491,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
             logger.info("Saving features into cached file %s", cached_features_file)
             torch.save(features, cached_features_file)
             logger.info("Saving examples into cached file %s", cached_examples_file)
-            save_tsv(examples, cached_examples_file)
+            save_tsv(((x.guid, x.text_a, x.text_b, x.label) for x in examples), cached_examples_file)
 
 
     if args.local_rank == 0 and not evaluate:
