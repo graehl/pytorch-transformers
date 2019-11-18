@@ -323,6 +323,38 @@ def is_url(x):
     return x.startswith('http://') or x.startswith('https://')
 
 
+#from spacy.lang.en import English
+#disables = ['ner', 'parser', 'tagger']
+#_nlp = spacy.load('en_core_web_sm', disable=disables) #English()
+#segmenter = _nlp.Defaults.create_segmenter(_nlp)
+#fix_text = ftfy.fix_text
+
+import urllib.request
+import re
+blanksre = re.compile(r'\s+')
+from ftfy import fix_text
+from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
+
+
+def url_sentences(url):
+    punkt_param = PunktParameters()
+    punkt = PunktSentenceTokenizer(punkt_param)
+    with urllib.request.urlopen(devfile) as response:
+        lines = []
+        for line in response.readlines():
+            line = line.decode('utf-8') if isinstance(line, bytes) else line
+            line = fix_text(line).strip()
+            if len(line) <= 1: continue
+            line = blanksre.sub(' ', line)
+            lines.append(line)
+            punkt.train(line, finalize=False)
+        punkt.finalize_training()
+        r = []
+        for line in lines:
+            r.append(punkt(line))
+        return r
+
+
 class Sentiment3Processor(DataProcessor):
     """Processor for the SST-2 data set (GLUE version)."""
 
@@ -346,20 +378,7 @@ class Sentiment3Processor(DataProcessor):
         if os.path.isfile(devfile):
             devtsv = self._read_tsv(devfile)
         elif is_url(data_dir_or_url_or_text):
-            import urllib.request
-            import re
-            blanks = re.compile(r'\s+')
-            with urllib.request.urlopen(devfile) as response:
-                lines = []
-                for line in response.readlines():
-                    line = line.decode('utf-8') if isinstance(line, bytes) else line
-                    line = line.strip()
-                    if len(line) < 2: continue
-                    if line[-2] == '\t' and line[-1] in ('0', '1', '2'):
-                        c = line[-1]
-                    line = blanks.sub(' ', line)
-                    lines.append((line, '2'))
-                devtsv = lines
+            devtsv = [(line, '2') for line in url_sentences(data_dir_or_url_or_text)]
         else:
             lines = data_dir_or_url_or_text
             texts = lines.splitlines(keepends=False) if isinstance(lines, str) else lines

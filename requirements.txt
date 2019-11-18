@@ -10,3 +10,6 @@ regex
 sentencepiece
 # For XLM
 sacremoses
+# For Sentiment3/GLUE:
+nltk
+ftfy
