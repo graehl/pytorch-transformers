@@ -426,7 +426,8 @@ def load_eval_examples(args, task, tokenizer, text=None, evaluate=True):
 
 
 def save_tsv(examples, f):
-    f = open(f, 'w', encoding='utf-8') if isinstance(f, str)
+    if isinstance(f, str):
+        f = open(f, 'w', encoding='utf-8')
     for x in examples:
         f.write('\t'.join(x) + '\n')
     f.close()
