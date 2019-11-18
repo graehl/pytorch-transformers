@@ -346,7 +346,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 outverbose('%s\t%s' % (rounded(logits.tolist()), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
                 for l in logits:
                     confmax = max(l)
-                    if i > len(eval_examples): break
+                    if i >= len(eval_examples): break
                     for j in (0, 1):
                         conf = l[j] - confmax
                         if conf > 3:
