@@ -336,26 +336,33 @@ from ftfy import fix_text
 from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 
 
-def url_sentences(url):
+def text_sentences(text):
+    lines = text.splitlines(keepends=False) if isinstance(text, str) else text
+    for line in lines:
+        line = line.decode('utf-8') if isinstance(line, bytes) else line
+        line = fix_text(line).strip()
+        if len(line) <= 1: continue
+        line = blanksre.sub(' ', line)
+        lines.append(line)
     punkt_param = PunktParameters()
     punkt = PunktSentenceTokenizer(punkt_param)
+    punkt.train('\n'.join(lines))
+    r = []
+    for line in lines:
+        r.extend(punkt.tokenize(line))
+    return r
+
+
+def url_sentences(url):
     with urllib.request.urlopen(url) as response:
-        lines = []
-        for line in response.readlines():
-            line = line.decode('utf-8') if isinstance(line, bytes) else line
-            line = fix_text(line).strip()
-            if len(line) <= 1: continue
-            line = blanksre.sub(' ', line)
-            lines.append(line)
-        punkt.train('\n'.join(lines))
-        r = []
-        for line in lines:
-            r.extend(punkt.tokenize(line))
-        return r
+        return text_sentences(response.readlines())
 
 
 class Sentiment3Processor(DataProcessor):
     """Processor for the SST-2 data set (GLUE version)."""
+
+    def __init__(self):
+        self.noclass = '2'
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
@@ -376,12 +383,14 @@ class Sentiment3Processor(DataProcessor):
             devfile = data_dir_or_url_or_text
         if os.path.isfile(devfile):
             devtsv = self._read_tsv(devfile)
+            if all(len(x) == 1 for x in devtsv:
+                devtsv = [(line, self.noclass) for line in text_sentences(devtsv)]
         elif is_url(data_dir_or_url_or_text):
-            devtsv = [(line, '2') for line in url_sentences(data_dir_or_url_or_text)]
+            devtsv = [(line, self.noclass) for line in url_sentences(data_dir_or_url_or_text)]
         else:
             lines = data_dir_or_url_or_text
             texts = lines.splitlines(keepends=False) if isinstance(lines, str) else lines
-            devtsv = [(x, '2') for x in [line.strip() for line in lines] if len(x) > 0]
+            devtsv = [(x, self.noclass) for x in [line.strip() for line in lines] if len(x) > 0]
         return self._create_examples(devtsv, "dev")
 
     def get_labels(self):
@@ -395,7 +404,7 @@ class Sentiment3Processor(DataProcessor):
             guid = "%s-%s" % (set_type, i)
             assert len(line) <= 2, '%s %s' % (guid, line)
             text_a = fix_text(line[0])
-            label = line[1] if len(line) == 2 else '2'
+            label = line[1] if len(line) == 2 else self.noclass
             examples.append(
                 InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
         return examples
