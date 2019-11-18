@@ -86,7 +86,7 @@ stdout_verbose_every = 1
 def rounded(x, digits=3):
     form = "{0:.%sf}" % digits
     def rx(x):
-        return form.format(x) if isinstance(x, float) else [rx(y) for y in x] if isinstance(x, list) else x
+        return float(form.format(x)) if isinstance(x, float) else [rx(y) for y in x] if isinstance(x, list) else x
     return rx(x)
 
 
