@@ -377,7 +377,6 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 desc = '%s %s %s %s' % (rounded(logit), j, rounded(conf), example.texts())
                 if topi < outmax:
                     sys.stdout.write(desc + '\n')
-                outverbose(desc, v=1, seq=topi)
 
         eval_loss = eval_loss / nb_eval_steps
         if args.output_mode == "classification":
