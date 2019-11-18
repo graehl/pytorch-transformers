@@ -336,11 +336,13 @@ from ftfy import fix_text
 from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 
 
+
 def text_sentences(text):
-    lines = text.splitlines(keepends=False) if isinstance(text, str) else text
-    for line in lines:
-        line = line.decode('utf-8') if isinstance(line, bytes) else line
-        line = fix_text(line).strip()
+    if isinstance(line, bytes):
+        text = text.decode('utf-8')
+    lines = []
+    for line in text.splitlines(keepends=False) if isinstance(text, str) else text:
+        line = fix_text(line.decode('utf-8') if isinstance(line, bytes) else line).strip()
         if len(line) <= 1: continue
         line = blanksre.sub(' ', line)
         lines.append(line)
