@@ -339,7 +339,7 @@ from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 def url_sentences(url):
     punkt_param = PunktParameters()
     punkt = PunktSentenceTokenizer(punkt_param)
-    with urllib.request.urlopen(devfile) as response:
+    with urllib.request.urlopen(url) as response:
         lines = []
         for line in response.readlines():
             line = line.decode('utf-8') if isinstance(line, bytes) else line
