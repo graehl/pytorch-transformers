@@ -439,7 +439,11 @@ def save_tsv(examples, f):
     if isinstance(f, str):
         f = open(f, 'w', encoding='utf-8')
     for x in examples:
-        f.write('\t'.join('' if x is None else str(x)) + '\n')
+        if isinstance(x, str):
+            f.write(x)
+        else:
+            f.write('\t'.join(map(str, x)))
+        f.write('\n')
     f.close()
 
 
