@@ -378,7 +378,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             s = sorted(c, reverse=True)
             for topi, x in enumerate(s):
                 conf, i, logit, example = x
-                desc = '%s %s [#%s gold:%s] %s %s' % (rounded(logit), j, example.label, i, rounded(conf), example.texts())
+                desc = '%s %s [#%s gold:%s] %s %s' % (rounded(logit), j, i, example.label, rounded(conf), example.texts())
                 if topi < outmax:
                     sys.stdout.write(desc + '\n')
                 outverbose(desc, v=2, seq=topi)
