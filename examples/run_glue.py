@@ -315,7 +315,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         vf = os.path.join(eval_output_dir, 'verbose.txt')
         verbose_outfile = open(vf, 'w', encoding='utf-8')
         logger.info('writing logits etc to %s' % vf)
-        eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, evaluate=True)
+        eval_dataset, eval_examples = load_and_cache_examples(args, eval_task, tokenizer, evaluate=True)
 
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
             os.makedirs(eval_output_dir)
@@ -333,6 +333,8 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         nb_eval_steps = 0
         preds = None
         out_label_ids = None
+        i = 0
+        confs = ([], [])
         for batch in tqdm(eval_dataloader, desc="Evaluating", mininterval=mininterval):
             model.eval()
             batch = tuple(t.to(args.device) for t in batch) # t[0] pair with input
@@ -341,6 +343,14 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
                 outverbose('%s\t%s' % (rounded(logits.tolist()), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
+                for l in logits:
+                    i += 1
+                    confmax = max(l)
+                    for j in (0, 1):
+                        conf = l[j] - confmax
+                        if conf > 3:
+                            outverbose('%s %s' % (conf, eval_examples[i]), v=1)
+                        confs[j].append((conf, i, logits, eval_examples[i]))
                 eval_loss += tmp_eval_loss.mean().item()
             nb_eval_steps += 1
             if preds is None:
@@ -349,6 +359,15 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             else:
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
                 out_label_ids = np.append(out_label_ids, inputs['labels'].detach().cpu().numpy(), axis=0)
+        for j, c in enumerate(confs):
+            s = c.sorted(reverse=True)
+            outmax = 20
+            for topi, x in enumerate(s):
+                conf, i, logits, example = x
+                desc = '%s %s %s %s' % (logits, j, conf, example[0])
+                if topi < outmax:
+                    sys.stdout.write(desc + '\n')
+                outverbose(desc, v=0, seq=topi)
 
         eval_loss = eval_loss / nb_eval_steps
         if args.output_mode == "classification":
@@ -367,6 +386,61 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             logger.info("***** Eval results {} *****: {}".format(prefix, " ".join("%s = %.3f"%(key, result[key]) for key in skeys)))
 
     return results
+
+
+def load_eval_examples(args, task, tokenizer, text=None, evaluate=True):
+    """as load_and_cache_examples but no cache"""
+    processor = processors[task]()
+    output_mode = output_modes[task]
+    # Load data features from cache or dataset file
+    devname = 'dev'
+    devtext = args.eval_text
+    processor.__devtexturl = devtext
+    logger.info("datadir=%s devtexturl=%s text=%s" % (args.data_dir, devtext, text))
+    if devtext:
+        devname = os.path.basename(devtext)
+    else:
+        devtext = args.data_dir
+    if text:
+        devtext = text
+    examples = processor.get_dev_examples(devtext)
+    features = convert_examples_to_features(examples,
+                                            tokenizer,
+                                            label_list=label_list,
+                                            max_length=args.max_seq_length,
+                                            output_mode=output_mode,
+                                            pad_on_left=bool(args.model_type in ['xlnet']),                 # pad on the left for xlnet
+                                            pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
+                                            pad_token_segment_id=4 if args.model_type in ['xlnet'] else 0,
+    )
+    all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    all_attention_mask = torch.tensor([f.attention_mask for f in features], dtype=torch.long)
+    all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
+    if output_mode == "classification":
+        all_labels = torch.tensor([f.label for f in features], dtype=torch.long)
+    elif output_mode == "regression":
+        all_labels = torch.tensor([f.label for f in features], dtype=torch.float)
+
+    dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels)
+    return (dataset, examples)
+
+
+def save_tsv(examples, f):
+    f = open(f, 'w', encoding='utf-8') if isinstance(f, str)
+    for x in examples:
+        f.write('\t'.join(x) + '\n')
+    f.close()
+
+
+def load_tsv(f):
+    f = open(f, 'r', encoding='utf-8') if isinstance(f, str)
+    examples = []
+    for line in f:
+        if len(line) < 2: continue
+        line = line.split('\t')
+        examples.append(line)
+    f.close()
+    return examples
 
 
 def load_and_cache_examples(args, task, tokenizer, evaluate=False):
@@ -389,9 +463,11 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         list(filter(None, args.model_name_or_path.split('/'))).pop(),
         str(args.max_seq_length),
         str(task)))
+    cached_examples_file = 'examples_' + cached_features_file
     if os.path.exists(cached_features_file) and not args.overwrite_cache:
         logger.info("Loading features from cached file %s", cached_features_file)
         features = torch.load(cached_features_file)
+        examples = load_tsv(cached_examples_file)
     else:
         logger.info("Creating features from dataset file at %s", args.data_dir)
         label_list = processor.get_labels()
@@ -411,6 +487,9 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         if args.local_rank in [-1, 0]:
             logger.info("Saving features into cached file %s", cached_features_file)
             torch.save(features, cached_features_file)
+            logger.info("Saving examples into cached file %s", cached_examples_file)
+            save_tsv(examples, cached_examples_file)
+
 
     if args.local_rank == 0 and not evaluate:
         torch.distributed.barrier()  # Make sure only the first process in distributed training process the dataset, and the others will use the cache
@@ -425,7 +504,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         all_labels = torch.tensor([f.label for f in features], dtype=torch.float)
 
     dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels)
-    return dataset
+    return (dataset, examples)
 
 
 def main():
@@ -609,7 +688,7 @@ def main():
 
     # Training
     if args.do_train:
-        train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)
+        train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)[0]
         global_step, tr_loss = train(args, train_dataset, model, tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 

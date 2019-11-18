@@ -334,14 +334,14 @@ class Sentiment3Processor(DataProcessor):
         return self._create_examples(
             self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
-    def get_dev_examples(self, data_dir):
+    def get_dev_examples(self, data_dir_or_url_or_text):
         """See base class."""
-        devfile = os.path.join(data_dir, "dev.tsv")
+        devfile = os.path.join(data_dir_or_url_or_text, "dev.tsv")
         if not os.path.isfile(devfile):
-            devfile = data_dir
+            devfile = data_dir_or_url_or_text
         if os.path.isfile(devfile):
             devtsv = self._read_tsv(devfile)
-        else:
+        elif data_dir_or_url_or_text.startswith('http:'):
             import urllib.request
             import re
             blanks = re.compile(r'\s+')
@@ -356,6 +356,10 @@ class Sentiment3Processor(DataProcessor):
                     line = blanks.sub(' ', line)
                     lines.append((line, '2'))
                 devtsv = lines
+        else:
+            lines = data_dir_or_url_or_text
+            texts = lines.splitlines(keepends=False) if isinstance(lines, str)
+            devtsv = [(line, '2') for line in texts]
         return self._create_examples(devtsv, "dev")
 
     def get_labels(self):
