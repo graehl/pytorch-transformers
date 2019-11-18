@@ -60,6 +60,7 @@ from transformers import glue_processors as processors
 from transformers import glue_convert_examples_to_features as convert_examples_to_features
 from transformers import InputExample as InputExample
 
+from collections import Counter
 
 mininterval = 10
 
@@ -341,6 +342,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             model.eval()
             batch = tuple(t.to(args.device) for t in batch) # t[0] pair with input
             inputs = batch_inputs(batch, args.model_type)
+            dups = Counter()
             with torch.no_grad():
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
@@ -357,9 +359,12 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                         confmax = max(l)
                         l[j] = confj
                         conf = l[j] - confmax
-                        if conf > 5: outverbose('%s %s %s %s' % (rounded(conf), j, ex.texts(), ex.label), v=1)
                         if conf > 0:
-                            confs[j].append((conf, i, l, ex))
+                            t = ex.texts()
+                            dups[t] += 1
+                            if dups[t] == 1:
+                                confs[j].append((conf, i, l, ex))
+                                if conf > 5: outverbose('%s %s %s %s' % (rounded(conf), j, t, ex.label), v=1)
                     i += 1
             nb_eval_steps += 1
             if preds is None:
@@ -368,9 +373,9 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             else:
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
                 out_label_ids = np.append(out_label_ids, inputs['labels'].detach().cpu().numpy(), axis=0)
+        outmax = 10
         for j, c in enumerate(confs):
             s = sorted(c, reverse=True)
-            outmax = 5
             for topi, x in enumerate(s):
                 conf, i, logit, example = x
                 desc = '%s %s %s %s' % (rounded(logit), j, rounded(conf), example.texts())
