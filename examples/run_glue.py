@@ -345,15 +345,16 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
                 eval_loss += tmp_eval_loss.mean().item()
-                outverbose('%s\t%s' % (rounded(logits.tolist()), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
-                for l in logits:
+                logs = logits.tolist()
+                outverbose('%s\t%s' % (rounded(logs), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
+                for l in logs:
                     confmax = max(l)
                     if i >= len(eval_examples): break
                     for j in (0, 1):
                         conf = l[j] - confmax
                         if conf > 3:
                             outverbose('%s %s' % (conf, eval_examples[i]), v=1)
-                        confs[j].append((conf, i, logits, eval_examples[i]))
+                        confs[j].append((conf, i, l, eval_examples[i]))
                     i += 1
             nb_eval_steps += 1
             if preds is None:
@@ -366,8 +367,8 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             s = sorted(c, reverse=True)
             outmax = 20
             for topi, x in enumerate(s):
-                conf, i, logits, example = x
-                desc = '%s %s %s %s' % (logits, j, conf, example.texts())
+                conf, i, logit, example = x
+                desc = '%s %s %s %s' % (logit, j, conf, example.texts())
                 if topi < outmax:
                     sys.stdout.write(desc + '\n')
                 outverbose(desc, v=1, seq=topi)
