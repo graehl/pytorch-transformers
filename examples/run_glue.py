@@ -338,11 +338,11 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         out_label_ids = None
         i = 0
         confs = ([], [])
+        dups = Counter()
         for batch in tqdm(eval_dataloader, desc="Evaluating", mininterval=mininterval):
             model.eval()
             batch = tuple(t.to(args.device) for t in batch) # t[0] pair with input
             inputs = batch_inputs(batch, args.model_type)
-            dups = Counter()
             with torch.no_grad():
                 outputs = model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
