@@ -489,7 +489,8 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         str(task))
     cached_features_file = os.path.join(args.data_dir, cache)
     cached_examples_file = os.path.join(args.data_dir, cache + '.examples.tsv')
-    if os.path.exists(cached_features_file) and os.path.exists(cached_examples_file) and not args.overwrite_cache:
+    evalnocache = evaluate and args.no_cache
+    if os.path.exists(cached_features_file) and os.path.exists(cached_examples_file) and not args.overwrite_cache and not evalnocache:
         logger.info("Loading features from cached file %s", cached_features_file)
         features = torch.load(cached_features_file)
         logger.info("Loading examples from cached file %s", cached_examples_file)
@@ -510,7 +511,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
                                                 pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
                                                 pad_token_segment_id=4 if args.model_type in ['xlnet'] else 0,
         )
-        if args.local_rank in [-1, 0]:
+        if args.local_rank in [-1, 0] and not evalnocache:
             logger.info("Saving features into cached file %s", cached_features_file)
             torch.save(features, cached_features_file)
             logger.info("Saving examples into cached file %s", cached_examples_file)
@@ -602,6 +603,8 @@ def main():
                         help="Overwrite the content of the output directory")
     parser.add_argument('--overwrite_cache', action='store_true',
                         help="Overwrite the cached training and evaluation sets")
+    parser.add_argument('--no_cache', action='store_true',
+                        help="Never cache evaluation set")
     parser.add_argument('--seed', type=int, default=42,
                         help="random seed for initialization")
 
