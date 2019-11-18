@@ -460,12 +460,13 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         devname = os.path.basename(devtext)
     else:
         devtext = args.data_dir
-    cached_features_file = os.path.join(args.data_dir, 'cached_{}_{}_{}_{}'.format(
+    cache = 'cached_{}_{}_{}_{}'.format(
         devname if evaluate else 'train',
         list(filter(None, args.model_name_or_path.split('/'))).pop(),
         str(args.max_seq_length),
-        str(task)))
-    cached_examples_file = 'examples_' + cached_features_file
+        str(task))
+    cached_features_file = os.path.join(args.data_dir, cache)
+    cached_examples_file = os.path.join(args.data_dir, 'examples_' + cache)
     if os.path.exists(cached_features_file) and not args.overwrite_cache:
         logger.info("Loading features from cached file %s", cached_features_file)
         features = torch.load(cached_features_file)
