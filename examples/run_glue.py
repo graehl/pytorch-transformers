@@ -443,7 +443,7 @@ def load_tsv(f):
     f.close()
     return examples
 
-from data.processors.utils import InputExample
+from .data.processors.utils import InputExample
 
 def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     if args.local_rank not in [-1, 0] and not evaluate:
