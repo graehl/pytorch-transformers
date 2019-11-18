@@ -319,6 +319,10 @@ class Sst2Processor(DataProcessor):
         return examples
 
 
+def is_url(x):
+    return x.startswith('http://') or x.startswith('https://')
+
+
 class Sentiment3Processor(DataProcessor):
     """Processor for the SST-2 data set (GLUE version)."""
 
@@ -341,7 +345,7 @@ class Sentiment3Processor(DataProcessor):
             devfile = data_dir_or_url_or_text
         if os.path.isfile(devfile):
             devtsv = self._read_tsv(devfile)
-        elif data_dir_or_url_or_text.startswith('http:'):
+        elif is_url(data_dir_or_url_or_text):
             import urllib.request
             import re
             blanks = re.compile(r'\s+')
