@@ -357,8 +357,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                         confmax = max(l)
                         l[j] = confj
                         conf = l[j] - confmax
-                        if conf > 3:
-                            outverbose('%s %s' % (conf, ex), v=1)
+                        if conf > 5: outverbose('%s %s %s %s' % (rounded(conf), j ex.texts(), ex.label), v=1)
                         if conf > 0:
                             confs[j].append((conf, i, l, ex))
                     i += 1
