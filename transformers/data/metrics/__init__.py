@@ -72,3 +72,11 @@ if _has_sklearn:
             return pearson_and_spearman(preds, labels)
         else:
             return {"acc": simple_accuracy(preds, labels), "2acc": non2_accuracy(preds, labels)} # , "f1": f1_score(y_true=labels, y_pred=preds)
+
+
+    def xnli_compute_metrics(task_name, preds, labels):
+        assert len(preds) == len(labels)
+        if task_name == "xnli":
+            return {"acc": simple_accuracy(preds, labels)}
+        else:
+            raise KeyError(task_name)
