@@ -396,12 +396,15 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         evalTime = timeit.default_timer() - start_time
         logger.info("  Evaluation done in total %f secs (%f sec per example)", evalTime, evalTime / len(eval_dataset))
         output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
+        def fmtfloat(x):
+            return str(x) if x.is_integer() else '%.3f' % x
+
         with open(output_eval_file, "w") as writer:
             skeys = sorted(result.keys())
             for key in skeys:
                 writer.write("%s = %s\n" % (key, str(result[key])))
-                logger.info("%s = %.3f"%(key, result[key]))
-            logger.info("***** Eval results {} *****: {}".format(prefix, " ".join("%s = %.3f"%(key, result[key]) for key in skeys)))
+                logger.info("%s = %s"%(key, fmtfloat(result[key])))
+            logger.info("***** Eval results {} *****: {}".format(prefix, " ".join("%s = %s"%(key, fmtfloat(result[key])) for key in skeys)))
 
     return results
 
