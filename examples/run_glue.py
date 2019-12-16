@@ -361,7 +361,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                     if i >= len(eval_examples): break
                     ex = eval_examples[i]
                     minl = min(l)
-                    if len(l) > nclasses:
+                    if nclasses is None or len(l) > nclasses:
                         if nclasses is not None:
                             logger.warn("# of classes differed: %s vs %s in %s; dropping old data" % (nclasses, len(l), l))
                         nclasses = len(l)
