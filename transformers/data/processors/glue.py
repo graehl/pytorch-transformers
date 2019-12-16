@@ -385,7 +385,8 @@ class Sentiment3Processor(DataProcessor):
             devfile = data_dir_or_url_or_text
         if os.path.isfile(devfile):
             devtsv = self._read_tsv(devfile)
-            devtsv = [(line, self.noclass) if len(line) == 1 else line for line in text_sentences('\n'.join(d[0] for d in devtsv)) if len(line) > 0]
+            lines = text_sentences('\n'.join(d[0] for d in devtsv if len(d) > 0))
+            devtsv = [(x, self.noclass) for x in [line.strip() for line in lines] if len(x) > 0]
         elif is_url(data_dir_or_url_or_text):
             devtsv = [(line, self.noclass) for line in url_sentences(data_dir_or_url_or_text)]
         else:
