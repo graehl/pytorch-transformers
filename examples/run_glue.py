@@ -21,6 +21,7 @@ import glob
 import logging
 import os
 import random
+import timeit
 
 import numpy as np
 import torch
@@ -327,6 +328,8 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         if args.n_gpu > 1:
             model = torch.nn.DataParallel(model)
 
+        start_time = timeit.default_timer()
+
         # Eval!
         logger.info("***** Running evaluation {} *****".format(prefix))
         logger.info("  Num examples = %d", len(eval_dataset))
@@ -390,6 +393,8 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         result = compute_metrics(eval_task, preds, out_label_ids)
         results.update(result)
 
+        evalTime = timeit.default_timer() - start_time
+        logger.info("  Evaluation done in total %f secs (%f sec per example)", evalTime, evalTime / len(eval_dataset))
         output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
         with open(output_eval_file, "w") as writer:
             skeys = sorted(result.keys())
