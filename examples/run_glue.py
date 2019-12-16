@@ -397,7 +397,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         logger.info("  Evaluation done in total %f secs (%f sec per example)", evalTime, evalTime / len(eval_dataset))
         output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
         def fmtfloat(x):
-            return str(x) if x.is_integer() else '%.3f' % x
+            return str(x) if (not isinstance(x, float) or x.is_integer()) else '%.3f' % x
 
         with open(output_eval_file, "w") as writer:
             skeys = sorted(result.keys())
