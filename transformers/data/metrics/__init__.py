@@ -17,6 +17,7 @@
 import csv
 import sys
 import logging
+from collections import Counter
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,12 @@ if _has_sklearn:
         elif task_name == "sts-b":
             return pearson_and_spearman(preds, labels)
         else:
-            return {"acc": simple_accuracy(preds, labels), "2acc": non2_accuracy(preds, labels)} # , "f1": f1_score(y_true=labels, y_pred=preds)
+            r = Counter()
+            r["acc"] = simple_accuracy(preds, labels)
+            r["2acc"] = non2_accuracy(preds, labels) # , "f1": f1_score(y_true=labels, y_pred=preds)
+            for p, l in zip(preds, labels):
+                r['%s/%s' % (p, l)] += 1
+            return r
 
 
     def xnli_compute_metrics(task_name, preds, labels):
