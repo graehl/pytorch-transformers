@@ -403,7 +403,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         docpos = docsentiment[0]
         docneg = docsentiment[1]
         docposneg = (docpos - docneg) * (1. - docsentiment[2])
-        logger('document sentiment (%s sentences): %s; net positive/negative: %.3f' % (nsents, rounded(docsentiment), docposneg))
+        logger.info('document sentiment (%s sentences): %s; net positive/negative: %.3f' % (nsents, rounded(docsentiment), docposneg))
         eval_loss = eval_loss / nb_eval_steps
         if args.output_mode == "classification":
             preds = np.argmax(preds, axis=1)
