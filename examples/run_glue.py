@@ -398,12 +398,13 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 if topi < outmax:
                     sys.stdout.write(desc + '\n')
                 outverbose(desc, v=2, seq=topi)
-        scale = 1. / sum(docsentiment)
+        scale = 1.0 / sum(docsentiment)
         docsententiment = [x * scale for x in docsentiment]
         docneg = docsentiment[0]
         docpos = docsentiment[1]
         docneu = docsentiment[2]
         docposneg = (docpos - docneg) * (1. - docneu)
+        logger.info('document sentiment normalized (%s sentences): %s, %s neg, %s pos, %s neu, scale was %s, sum %s' % (nsents, docneg, docpos, docneu, docsentiment, scale, sum(docsentiment)))
         logger.info('document sentiment (%s sentences): %s; net positive/negative: %.3f' % (nsents, rounded(docsentiment), docposneg))
         eval_loss = eval_loss / nb_eval_steps
         if args.output_mode == "classification":
