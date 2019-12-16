@@ -246,6 +246,8 @@ def train(args, train_dataset, model, tokenizer):
 
 
 def dataset_for_texts(texts, model, tokenizer):
+    features = None
+    #TODO: convert_examples_to_features
     # Convert to Tensors and build dataset
     all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
     all_attention_mask = torch.tensor([f.attention_mask for f in features], dtype=torch.long)
@@ -263,6 +265,7 @@ def classify(texts, args, model, tokenizer, verbose=1):
     global stdout_verbose_every
     stdout_verbose_every = args.verbose_every
     dataset = dataset_for_texts(texts, model, tokenizer)
+    eval_dataset = None # TODO
     eval_sampler = SequentialSampler(eval_dataset)
     eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size)
     return [(0,0) for _ in range(len(texts))]
@@ -276,6 +279,8 @@ def server(args, model, tokenizer, verbose=1):
     args.eval_batch_size = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
     batchsz = args.eval_batch_size
     eof = False
+    nc = 0
+    #TODO
     while not eof:
         lines = []
         nc += 1
@@ -291,7 +296,7 @@ def server(args, model, tokenizer, verbose=1):
             eof = True
         if len(lines) > 0:
             logits = classify(lines, args, model, tokenizer, verbose)
-            for i, logit in enumerate[logits]:
+            for i, logit in enumerate(logits):
                 outserver('%s\t%s'%(logit, lines[i]))
             lines = []
         elif eof:
@@ -339,7 +344,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         preds = None
         out_label_ids = None
         i = 0
-        confs = ([], [])
+        confs = None
         dups = Counter()
         for batch in tqdm(eval_dataloader, desc="Evaluating", mininterval=mininterval):
             model.eval()
@@ -351,11 +356,17 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 eval_loss += tmp_eval_loss.mean().item()
                 logs = logits.tolist()
                 outverbose('%s\t%s' % (rounded(logs), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
+                nclasses = None
                 for l in logs:
                     if i >= len(eval_examples): break
                     ex = eval_examples[i]
                     minl = min(l)
-                    for j in range(len(confs)):
+                    if len(l) > nclasses:
+                        if nclasses is not None:
+                            logger.warn("# of classes differed: %s vs %s in %s; dropping old data" % (nclasses, len(l), l))
+                        nclasses = len(l)
+                        confs = [[] for x in l]
+                    for j in range(nclasses):
                         confj = l[j]
                         l[j] = minl
                         confmax = max(l)
@@ -376,15 +387,23 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
                 out_label_ids = np.append(out_label_ids, inputs['labels'].detach().cpu().numpy(), axis=0)
         outmax = 20
+        docsentiment = [0 for x in range(nclasses)]
+        nsents = i
         for j, c in enumerate(confs):
             s = sorted(c, reverse=True)
             for topi, x in enumerate(s):
                 conf, i, logit, example = x
                 desc = '%s %s [#%s gold:%s] %s %s' % (rounded(logit), j, i, example.label, rounded(conf), example.texts())
+                docsentiment[j] += conf
                 if topi < outmax:
                     sys.stdout.write(desc + '\n')
                 outverbose(desc, v=2, seq=topi)
-
+        scale = 1. / sum(docsentiment)
+        docsententiment = [x * scale for x in docsentiment]
+        docpos = docsentiment[0]
+        docneg = docsentiment[1]
+        docposneg = (docpos - docneg) * (1. - docsentiment[2])
+        logger('document sentiment (%s sentences): %s; net positive/negative: %.3f' % (nsents, rounded(docsentiment), docposneg))
         eval_loss = eval_loss / nb_eval_steps
         if args.output_mode == "classification":
             preds = np.argmax(preds, axis=1)
@@ -427,7 +446,7 @@ def load_eval_examples(args, task, tokenizer, text=None, evaluate=True):
     examples = processor.get_dev_examples(devtext)
     features = convert_examples_to_features(examples,
                                             tokenizer,
-                                            label_list=label_list,
+                                            label_list=None, #TODO?
                                             max_length=args.max_seq_length,
                                             output_mode=output_mode,
                                             pad_on_left=bool(args.model_type in ['xlnet']),                 # pad on the left for xlnet
