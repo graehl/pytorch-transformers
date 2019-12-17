@@ -399,7 +399,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                     sys.stdout.write(desc + '\n')
                 outverbose(desc, v=2, seq=topi)
         scale = 1.0 / sum(docsentiment)
-        docsententiment = [x * scale for x in docsentiment]
+        docsentiment = [x * scale for x in docsentiment]
         docneg = docsentiment[0]
         docpos = docsentiment[1]
         docneu = docsentiment[2]
