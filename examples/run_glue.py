@@ -346,6 +346,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         i = 0
         confs = None
         dups = Counter()
+        nclasses = None
         for batch in tqdm(eval_dataloader, desc="Evaluating", mininterval=mininterval):
             model.eval()
             batch = tuple(t.to(args.device) for t in batch) # t[0] pair with input
@@ -356,7 +357,6 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 eval_loss += tmp_eval_loss.mean().item()
                 logs = logits.tolist()
                 outverbose('%s\t%s' % (rounded(logs), inputs['labels'].tolist()), v=1, seq=nb_eval_steps)
-                nclasses = None
                 for l in logs:
                     if i >= len(eval_examples): break
                     ex = eval_examples[i]
