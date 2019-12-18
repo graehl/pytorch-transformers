@@ -18,11 +18,11 @@ from __future__ import print_function
 
 import unittest
 import shutil
-import pytest
 import sys
 
 from .modeling_tf_common_test import (TFCommonTestCases, ids_tensor)
 from .configuration_common_test import ConfigTester
+from .utils import require_tf, slow
 
 from transformers import XxxConfig, is_tf_available
 
@@ -33,10 +33,9 @@ if is_tf_available():
                                                TFXxxForTokenClassification,
                                                TFXxxForQuestionAnswering,
                                                TF_XXX_PRETRAINED_MODEL_ARCHIVE_MAP)
-else:
-    pytestmark = pytest.mark.skip("Require TensorFlow")
 
 
+@require_tf
 class TFXxxModelTest(TFCommonTestCases.TFCommonModelTester):
 
     all_model_classes = (TFXxxModel, TFXxxForMaskedLM, TFXxxForQuestionAnswering,
@@ -112,7 +111,7 @@ class TFXxxModelTest(TFCommonTestCases.TFCommonModelTester):
                 choice_labels = ids_tensor([self.batch_size], self.num_choices)
 
             config = XxxConfig(
-                vocab_size_or_config_json_file=self.vocab_size,
+                vocab_size=self.vocab_size,
                 hidden_size=self.hidden_size,
                 num_hidden_layers=self.num_hidden_layers,
                 num_attention_heads=self.num_attention_heads,
@@ -244,7 +243,7 @@ class TFXxxModelTest(TFCommonTestCases.TFCommonModelTester):
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
         self.model_tester.create_and_check_xxx_for_token_classification(*config_and_inputs)
 
-    @pytest.mark.slow
+    @slow
     def test_model_from_pretrained(self):
         cache_dir = "/tmp/transformers_test/"
         for model_name in ['xxx-base-uncased']:

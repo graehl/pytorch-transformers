@@ -36,9 +36,15 @@ To create the package for pypi.
 from io import open
 from setuptools import find_packages, setup
 
+
+extras = {
+    'serving': ['uvicorn', 'fastapi']
+}
+extras['all'] = [package for package in extras.values()]
+
 setup(
     name="transformers",
-    version="2.2.0",
+    version="2.2.2",
     author="Thomas Wolf, Lysandre Debut, Victor Sanh, Julien Chaumond, Google AI Language Team Authors, Open AI team Authors, Facebook AI Authors, Carnegie Mellon University Authors",
     author_email="thomas@huggingface.co",
     description="State-of-the-art Natural Language Processing for TensorFlow 2.0 and PyTorch",
@@ -53,7 +59,7 @@ setup(
                       'boto3',
                       'requests',
                       'tqdm',
-                      'regex',
+                      'regex != 2019.12.17',
                       'sentencepiece',
                       'sacremoses'],
     entry_points={
@@ -61,8 +67,11 @@ setup(
         "transformers=transformers.__main__:main",
       ]
     },
+    extras_require=extras,
+    scripts=[
+        'transformers-cli'
+    ],
     # python_requires='>=3.5.0',
-    tests_require=['pytest'],
     classifiers=[
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: Apache Software License',
