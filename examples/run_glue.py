@@ -400,12 +400,13 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                 outverbose(desc, v=2, seq=topi)
         scale = sum(docsentiment)
         scale = 1. / scale if scale > 0 else 0
-        docsentiment = [x * scale for x in docsentiment]
+        docsentimentraw = docsentiment
+        docsentiment = [x * scale for x in docsentimentraw]
         docneg = docsentiment[0]
         docpos = docsentiment[1]
         docneu = docsentiment[2]
         docposneg = (docpos - docneg) * (1. - docneu)
-        logger.info('document sentiment (%s sentences): %s; net positive/negative: %.3f' % (nsents, rounded(docsentiment), docposneg))
+        logger.info('document sentiment (%s sentences): unnormalized: %s; normalized: %s; net positive/negative: %.3f; ' % (nsents, rounded(docsentimentraw), rounded(docsentiment), docposneg))
         eval_loss = eval_loss / nb_eval_steps
         if args.output_mode == "classification":
             preds = np.argmax(preds, axis=1)
