@@ -46,6 +46,9 @@ from transformers import (WEIGHTS_NAME, BertConfig,
                                   XLMTokenizer, XLNetConfig,
                                   XLNetForSequenceClassification,
                                   XLNetTokenizer,
+                                  TFDistilBertConfig,
+                                  TFDistilBertForSequenceClassification,
+                                  TFDistilBertTokenizer,
                                   DistilBertConfig,
                                   DistilBertForSequenceClassification,
                                   DistilBertTokenizer,
@@ -77,6 +80,7 @@ MODEL_CLASSES = {
     'xlm': (XLMConfig, XLMForSequenceClassification, XLMTokenizer),
     'roberta': (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer),
     'distilbert': (DistilBertConfig, DistilBertForSequenceClassification, DistilBertTokenizer),
+    'tfdistilbert': (TFDistilBertConfig, TFDistilBertForSequenceClassification, TFDistilBertTokenizer),
     'albert': (AlbertConfig, AlbertForSequenceClassification, AlbertTokenizer)
 }
 
@@ -386,7 +390,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
                             dups[t] += 1
                             if dups[t] == 1:
                                 confs[j].append((conf, i, l, ex))
-                                if conf > 5: outverbose('%s %s %s %s' % (rounded(conf), j, t, ex.label), v=1)
+                                if conf > 8: outverbose('%s %s %s %s' % (rounded(conf), j, t, ex.label), v=1)
                     i += 1
             nb_eval_steps += 1
             if preds is None:
@@ -413,7 +417,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
         docsentiment = [x * scale for x in docsentimentraw]
         docneg = docsentiment[0]
         docpos = docsentiment[1]
-        docneu = docsentiment[2]
+        docneu = docsentiment[2] if len(docsentiment) >= 3 else 0
         docposneg = (docpos - docneg) * (1. - docneu)
         logger.info('document sentiment (%s sentences): unnormalized: %s; normalized: %s; net positive/negative: %.3f; ' % (nsents, rounded(docsentimentraw), rounded(docsentiment), docposneg))
         eval_loss = eval_loss / nb_eval_steps
