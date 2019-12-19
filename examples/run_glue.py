@@ -48,7 +48,6 @@ from transformers import (WEIGHTS_NAME, BertConfig,
                                   XLNetTokenizer,
                                   TFDistilBertConfig,
                                   TFDistilBertForSequenceClassification,
-                                  TFDistilBertTokenizer,
                                   DistilBertConfig,
                                   DistilBertForSequenceClassification,
                                   DistilBertTokenizer,
@@ -80,7 +79,7 @@ MODEL_CLASSES = {
     'xlm': (XLMConfig, XLMForSequenceClassification, XLMTokenizer),
     'roberta': (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer),
     'distilbert': (DistilBertConfig, DistilBertForSequenceClassification, DistilBertTokenizer),
-    'tfdistilbert': (TFDistilBertConfig, TFDistilBertForSequenceClassification, TFDistilBertTokenizer),
+    'tfdistilbert': (TFDistilBertConfig, TFDistilBertForSequenceClassification, DistilBertTokenizer),
     'albert': (AlbertConfig, AlbertForSequenceClassification, AlbertTokenizer)
 }
 
