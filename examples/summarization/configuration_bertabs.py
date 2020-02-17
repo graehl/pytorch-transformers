@@ -14,9 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ BertAbs configuration """
-import json
 import logging
-import sys
 
 from transformers import PretrainedConfig
 
@@ -64,6 +62,7 @@ class BertAbsConfig(PretrainedConfig):
     """
 
     pretrained_config_archive_map = BERTABS_FINETUNED_CONFIG_MAP
+    model_type = "bertabs"
 
     def __init__(
         self,
@@ -81,7 +80,7 @@ class BertAbsConfig(PretrainedConfig):
         dec_dropout=0.2,
         **kwargs,
     ):
-        super(BertAbsConfig, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.vocab_size = vocab_size
         self.max_pos = max_pos
