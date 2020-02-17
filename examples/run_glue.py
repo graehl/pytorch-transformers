@@ -46,7 +46,6 @@ from transformers import (WEIGHTS_NAME, BertConfig,
                                   XLMTokenizer, XLNetConfig,
                                   XLNetForSequenceClassification,
                                   XLNetTokenizer,
-                                  TFDistilBertForSequenceClassification,
                                   DistilBertConfig,
                                   DistilBertForSequenceClassification,
                                   DistilBertTokenizer,
@@ -54,6 +53,10 @@ from transformers import (WEIGHTS_NAME, BertConfig,
                                   AlbertForSequenceClassification,
                                   AlbertTokenizer,
                                 )
+from transformers import is_tf_available
+
+if is_tf_available():
+   from transformers import TFDistilBertForSequenceClassification
 
 from transformers import AdamW, get_linear_schedule_with_warmup
 
@@ -78,9 +81,11 @@ MODEL_CLASSES = {
     'xlm': (XLMConfig, XLMForSequenceClassification, XLMTokenizer),
     'roberta': (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer),
     'distilbert': (DistilBertConfig, DistilBertForSequenceClassification, DistilBertTokenizer),
-    'tfdistilbert': (DistilBertConfig, TFDistilBertForSequenceClassification, DistilBertTokenizer),
     'albert': (AlbertConfig, AlbertForSequenceClassification, AlbertTokenizer)
 }
+
+if is_tf_available():
+   MODEL_CLASSES['tfdistilbert'] = (DistilBertConfig, TFDistilBertForSequenceClassification, DistilBertTokenizer)
 
 
 verbosity = 1
