@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='labeled_document.proto',
   package='',
   syntax='proto2',
-  serialized_pb=_b('\n\x16labeled_document.proto\"1\n\x08\x44ocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x10\n\x08segments\x18\x02 \x03(\t\"\x17\n\x05Label\x12\x0e\n\x06logits\x18\x01 \x03(\x02\"5\n\x0fLabeledDocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\r\n\x05Label\x18\x02 \x03(\t')
+  serialized_pb=_b('\n\x16labeled_document.proto\"1\n\x08\x44ocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x10\n\x08segments\x18\x02 \x03(\t\"\x17\n\x05Label\x12\x0e\n\x06logits\x18\x01 \x03(\x02\">\n\x0fLabeledDocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x16\n\x06labels\x18\x02 \x03(\x0b\x32\x06.Label')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -110,8 +110,8 @@ _LABELEDDOCUMENT = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='Label', full_name='LabeledDocument.Label', index=1,
-      number=2, type=9, cpp_type=9, label=3,
+      name='labels', full_name='LabeledDocument.labels', index=1,
+      number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -129,9 +129,10 @@ _LABELEDDOCUMENT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=102,
-  serialized_end=155,
+  serialized_end=164,
 )
 
+_LABELEDDOCUMENT.fields_by_name['labels'].message_type = _LABEL
 DESCRIPTOR.message_types_by_name['Document'] = _DOCUMENT
 DESCRIPTOR.message_types_by_name['Label'] = _LABEL
 DESCRIPTOR.message_types_by_name['LabeledDocument'] = _LABELEDDOCUMENT

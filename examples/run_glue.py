@@ -368,11 +368,11 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
     nc = 0
     if args.proto:
         import labeled_document_pb2 as ld
-        import stream
+        import protostream
         stdout = os.fdopen(sys.stdout.fileno(), "wb", closefd=False) # or sys.stdout.buffer?
         stdin = os.fdopen(sys.stdin.fileno(), "rb", closefd=False) # or sys.stdin.buffer?
-        with stream.open(stdout, 'ab') as ostream:
-            for doc in stream.parse(stdin, ld.Document):
+        with protostream.open(mode='wb', fileobj=stdout) as ostream:
+            for doc in protostream.parse(stdin, ld.Document):
                 ldoc = ld.LabeledDocument()
                 ldoc.document_id = doc.document_id
                 sys.stderr.write("# got doc id=%s with %s segments\n" % (doc.document_id, len(doc.segments)))
@@ -381,7 +381,9 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
                     if len(segment) > 0:
                         label.logits[:] = classify1(segment, args, model, tokenizer)
                     ldoc.labels.append(label)
+                sys.stderr.write("# proto write: %s\n" % ldoc)
                 ostream.write(ldoc)
+                ostream.flush()
         return
     while not eof:
         lines = []

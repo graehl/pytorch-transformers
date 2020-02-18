@@ -12,5 +12,5 @@ message Label {
 
 message LabeledDocument {
     required string document_id = 1;
-    repeated string Label labels = 2; // one to one with segments in Document
+    repeated Label labels = 2; // one to one with segments in Document
 }
