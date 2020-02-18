@@ -366,13 +366,16 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
     args.eval_batch_size = batchsz
     eof = False
     nc = 0
-    if args.proto_server:
+    if args.proto:
         import labeled_document_pb2 as ld
         import stream
-        with stream.open(sys.stdout, 'ab') as ostream:
-            for doc in stream.parse(sys.stdin, ld.Document):
+        stdout = os.fdopen(sys.stdout.fileno(), "wb", closefd=False) # or sys.stdout.buffer?
+        stdin = os.fdopen(sys.stdin.fileno(), "rb", closefd=False) # or sys.stdin.buffer?
+        with stream.open(stdout, 'ab') as ostream:
+            for doc in stream.parse(stdin, ld.Document):
                 ldoc = ld.LabeledDocument()
                 ldoc.document_id = doc.document_id
+                sys.stderr.write("# got doc id=%s with %s segments\n" % (doc.document_id, len(doc.segments)))
                 for segment in doc.segments:
                     label = ld.Label()
                     if len(segment) > 0:
@@ -669,7 +672,7 @@ def main():
     parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
     parser.add_argument('--verbose_every', type=int, default=10, help="show every nth to stdout for verbose")
     parser.add_argument('--server', action='store_true', help='for each line on stdin, immediately output logit line [3.1, -2.1] - the argmax logit[i] is the class i, e.g. 0 negative 1 positive')
-    parser.add_argument('--proto_server', action='store_true', help='for each protobuf Document labeled_document.proto input, immediately output protobuf LabeledDocument (stdin/stdout); pip install pystream_protobuf')
+    parser.add_argument('--proto', action='store_true', help='stdin/stdout server: for each protobuf Document labeled_document.proto input, immediately output protobuf LabeledDocument (stdin/stdout); pip install pystream_protobuf; you may need to use python -u run_glue.py')
     parser.add_argument('--no_cache', action='store_true', help="Never cache evaluation set")
     parser.add_argument("--eval_text", default="", type=str, help="Eval lines of text from this file instead of normal dev.tsv; if no label, fake label 0 is used")
 
@@ -925,7 +928,7 @@ def main():
     # Evaluation
     results = {}
     doeval = args.do_eval
-    if args.proto_server:
+    if args.proto:
         args.server = True
     if (doeval or args.server) and args.local_rank in [-1, 0]:
         tokenizer = tokenizer_class.from_pretrained(args.output_dir, do_lower_case=args.do_lower_case)
