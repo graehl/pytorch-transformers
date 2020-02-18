@@ -13,3 +13,4 @@ sacremoses
 # For Sentiment3/GLUE:
 nltk
 ftfy
+pystream_protobuf

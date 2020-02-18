@@ -361,12 +361,25 @@ def outserver(x):
     print(str(x))
 
 
-def server(args, model, tokenizer, verbose=1):
-    args.eval_batch_size = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
-    batchsz = args.eval_batch_size
+def server(args, model, tokenizer, protobuf=False, verbose=1):
+    batchsz = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
+    args.eval_batch_size = batchsz
     eof = False
     nc = 0
-    #TODO
+    if args.proto_server:
+        import labeled_document_pb2 as ld
+        import stream
+        with stream.open(sys.stdout, 'ab') as ostream:
+            for doc in stream.parse(sys.stdin, ld.Document):
+                ldoc = ld.LabeledDocument()
+                ldoc.document_id = doc.document_id
+                for segment in doc.segments:
+                    label = ld.Label()
+                    if len(segment) > 0:
+                        label.logits[:] = classify1(segment, args, model, tokenizer)
+                    ldoc.labels.append(label)
+                ostream.write(ldoc)
+        return
     while not eof:
         lines = []
         nc += 1
@@ -387,7 +400,6 @@ def server(args, model, tokenizer, verbose=1):
             lines = []
         elif eof:
             outserver('')
-    pass #TODO: line(s) server. batch, blank line means flush + partial batch
 
 
 def evaluate(args, model, tokenizer, prefix="", verbose=1):
@@ -657,6 +669,9 @@ def main():
     parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
     parser.add_argument('--verbose_every', type=int, default=10, help="show every nth to stdout for verbose")
     parser.add_argument('--server', action='store_true', help='for each line on stdin, immediately output logit line [3.1, -2.1] - the argmax logit[i] is the class i, e.g. 0 negative 1 positive')
+    parser.add_argument('--proto_server', action='store_true', help='for each protobuf Document labeled_document.proto input, immediately output protobuf LabeledDocument (stdin/stdout); pip install pystream_protobuf')
+    parser.add_argument('--no_cache', action='store_true', help="Never cache evaluation set")
+    parser.add_argument("--eval_text", default="", type=str, help="Eval lines of text from this file instead of normal dev.tsv; if no label, fake label 0 is used")
 
     # Required parameters
     parser.add_argument(
@@ -785,8 +800,6 @@ def main():
     parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
     parser.add_argument("--server_ip", type=str, default="", help="For distant debugging.")
     parser.add_argument("--server_port", type=str, default="", help="For distant debugging.")
-    parser.add_argument('--no_cache', action='store_true', help="Never cache evaluation set")
-    parser.add_argument("--eval_text", default="", type=str, help="Eval lines of text from this file instead of normal dev.tsv; if no label, fake label 0 is used")
 
     args = parser.parse_args()
 
@@ -912,6 +925,8 @@ def main():
     # Evaluation
     results = {}
     doeval = args.do_eval
+    if args.proto_server:
+        args.server = True
     if (doeval or args.server) and args.local_rank in [-1, 0]:
         tokenizer = tokenizer_class.from_pretrained(args.output_dir, do_lower_case=args.do_lower_case)
         checkpoints = [args.output_dir]
