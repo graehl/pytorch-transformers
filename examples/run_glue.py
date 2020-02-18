@@ -339,16 +339,11 @@ def train(args, train_dataset, model, tokenizer):
     return global_step, tr_loss / global_step
 
 
-def dataset_for_texts(texts, model, tokenizer):
-    features = None
-    #TODO: convert_examples_to_features
-    # Convert to Tensors and build dataset
-    all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
-    all_attention_mask = torch.tensor([f.attention_mask for f in features], dtype=torch.long)
-    all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
-    all_labels = torch.tensor([f.label for f in features], dtype=torch.long)
-    dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels)
-    return dataset
+def classify1(text, args, model, tokenizer):
+    x = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt')
+    tensor = model(x['input_ids'], token_type_ids=x['token_type_ids'] if args.model_type in ['bert', 'xlnet'] else None)
+    return tensor[0].tolist()[0]
+    #.to_list
 
 
 def classify(texts, args, model, tokenizer, verbose=1):
@@ -358,11 +353,8 @@ def classify(texts, args, model, tokenizer, verbose=1):
     verbosity = verbose
     global stdout_verbose_every
     stdout_verbose_every = args.verbose_every
-    dataset = dataset_for_texts(texts, model, tokenizer)
-    eval_dataset = None # TODO
-    eval_sampler = SequentialSampler(eval_dataset)
-    eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size)
-    return [(0,0) for _ in range(len(texts))]
+    return [classify1(x, args, model, tokenizer) for x in texts]
+    #TODO: tokenizer.batch_encode_plus
 
 
 def outserver(x):
@@ -935,10 +927,6 @@ def main():
 
             model = model_class.from_pretrained(checkpoint)
             model.to(args.device)
-            if doeval:
-                result = evaluate(args, model, tokenizer, prefix=prefix, verbose=args.verbose)
-                result = dict((k + '_{}'.format(global_step), v) for k, v in result.items())
-                results.update(result)
             if doeval:
                 result = evaluate(args, model, tokenizer, prefix=prefix)
                 result = dict((k + "_{}".format(global_step), v) for k, v in result.items())

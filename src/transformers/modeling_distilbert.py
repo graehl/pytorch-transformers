@@ -83,7 +83,7 @@ class Embeddings(nn.Module):
         embeddings: torch.tensor(bs, max_seq_length, dim)
             The embedded tokens (plus position embeddings, no token_type embeddings)
         """
-        assert token_type_ids is None
+        #assert token_type_ids is None
         seq_length = input_ids.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids.device)  # (max_seq_length)
         position_ids = position_ids.unsqueeze(0).expand_as(input_ids)  # (bs, max_seq_length)
