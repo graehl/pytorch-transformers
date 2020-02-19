@@ -14,3 +14,4 @@ sacremoses
 nltk
 ftfy
 kafka-python
+protobuf>=3.11.3

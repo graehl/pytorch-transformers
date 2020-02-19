@@ -18,7 +18,8 @@ def add_kafka_args(parser):
         parser.add_argument('--kafka-in-topic', type=str, help='topic name for input Document protobuf requests', default=kafka_in_topic_default)
         parser.add_argument('--kafka-out-topic', type=str, help='topic name for output LabeledDocument protobuf responses', default=kafka_out_topic_default)
         parser.add_argument('--kafka', action='store_true', help='run kafka RPC-like service - read from kafka-in-topic and write to kafka-out-topic')
-
+    else:
+        parser.add_argument('--kafka', action='store_true', help='not supported - please pip install kafka-python')
 
 def rounded(x, digits=2):
     form = "{0:.%sf}" % digits
