@@ -353,58 +353,104 @@ def classify(texts, args, model, tokenizer, verbose=1):
     verbosity = verbose
     global stdout_verbose_every
     stdout_verbose_every = args.verbose_every
-    return [classify1(x, args, model, tokenizer) for x in texts]
+    r = [classify1(x, args, model, tokenizer) for x in texts]
+    return r
     #TODO: tokenizer.batch_encode_plus
+
+
+def labeldoc(doc, args, model, tokenizer):
+    import labeled_document_pb2 as ld
+    ldoc = ld.LabeledDocument()
+    ldoc.document_id = doc.document_id
+    sys.stderr.write("# got doc id=%s with %s segments\n" % (doc.document_id, len(doc.segments)))
+    start_time = timeit.default_timer()
+    for segment in doc.segments:
+        label = ld.Label()
+        if len(segment) > 0:
+            label.logits[:] = classify1(segment, args, model, tokenizer)
+        ldoc.labels.append(label)
+    time = timeit.default_timer() - start_time
+    sys.stderr.write("# writing proto result for doc %s (%s sec)\n" % (ldoc, time))
+    return ldoc
 
 
 def outserver(x):
     print(str(x))
 
 
+def makelist(x):
+    return x if isinstance(x, list) else [x]
+
+
+def log(x):
+    sys.stderr.write('#run_glue.py: %s\n' % str(x))
+
+
 def server(args, model, tokenizer, protobuf=False, verbose=1):
     batchsz = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
     args.eval_batch_size = batchsz
     eof = False
-    nc = 0
-    if args.proto:
+    if args.kafka:
+        import labeled_document_pb2 as ld
+        from time import sleep
+        from kafka import KafkaProducer, KafkaConsumer
+        producer = KafkaProducer(bootstrap_servers=makelist(args.kafka_bootstrap), api_version=args.kafka_api_version)
+        def parse_document(msg):
+            doc = ld.Document()
+            doc.ParseFromString(msg)
+            return doc
+        consumer = KafkaConsumer(args.kafka_in_topic, bootstrap_servers=makelist(args.kafka_bootstrap), api_version=args.kafka_api_version) # , value_deserializer=parse_document
+        sys.stderr.write('kafka server running until Ctrl-C\n')
+        try:
+            for msg in consumer:
+                # log('kafka msg: ' + str(msg))
+                doc = ld.Document()
+                doc.ParseFromString(msg.value)
+                value = labeldoc(doc, args, model, tokenizer).SerializeToString()
+                future = producer.send(args.kafka_out_topic, key=doc.document_id.encode('utf-8'), value=value)
+                # Block for 'synchronous' sends
+                try:
+                    record_metadata = future.get(timeout=10)
+                    log("wrote " + str(record_metadata) + " value: %s" % value)
+                except Exception as e:
+                    log("exception: %s" % e)
+                    raise e
+        except KeyboardInterrupt:
+            if consumer is not None: consumer.close()
+            if producer is not None: producer.close()
+        return
+    elif args.proto:
         import labeled_document_pb2 as ld
         import protostream
         stdout = os.fdopen(sys.stdout.fileno(), "wb", closefd=False) # or sys.stdout.buffer?
         stdin = os.fdopen(sys.stdin.fileno(), "rb", closefd=False) # or sys.stdin.buffer?
         with protostream.open(mode='wb', fileobj=stdout) as ostream:
             for doc in protostream.parse(stdin, ld.Document):
-                ldoc = ld.LabeledDocument()
-                ldoc.document_id = doc.document_id
-                sys.stderr.write("# got doc id=%s with %s segments\n" % (doc.document_id, len(doc.segments)))
-                for segment in doc.segments:
-                    label = ld.Label()
-                    if len(segment) > 0:
-                        label.logits[:] = classify1(segment, args, model, tokenizer)
-                    ldoc.labels.append(label)
-                sys.stderr.write("# proto write: %s\n" % ldoc)
-                ostream.write(ldoc)
-                ostream.flush()
+                ostream.write(labeldoc(doc, args, model, tokenizer))
         return
-    while not eof:
-        lines = []
-        nc += 1
-        try:
-            while True:
-                line = input()
-                assert line is not None
-                line = line.strip()
-                if len(line) == 0: break
-                lines.append(line)
-                if len(lines) >= batchsz: break
-        except EOFError:
-            eof = True
-        if len(lines) > 0:
-            logits = classify(lines, args, model, tokenizer, verbose)
-            for i, logit in enumerate(logits):
-                outserver('%s\t%s'%(logit, lines[i]))
+    else:
+        docid = 0
+        from kafka_args import label_str
+        while not eof:
             lines = []
-        elif eof:
-            outserver('')
+            try:
+                while True:
+                    line = input()
+                    assert line is not None
+                    line = line.strip()
+                    if len(line) == 0: break
+                    lines.append(line)
+                    if len(lines) >= batchsz: break
+            except EOFError:
+                eof = True
+            if len(lines) > 0:
+                logits = classify(lines, args, model, tokenizer, verbose)
+                for i, logit in enumerate(logits):
+                    outserver('%s %s' % (label_str(logit), lines[i]))
+                docid += 1
+                lines = []
+            elif eof:
+                outserver('')
 
 
 def evaluate(args, model, tokenizer, prefix="", verbose=1):
@@ -667,14 +713,16 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels)
     return (dataset, examples)
 
-
 def main():
     parser = argparse.ArgumentParser()
+    from kafka_args import add_kafka_args
+    add_kafka_args(parser)
 
     parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
     parser.add_argument('--verbose_every', type=int, default=10, help="show every nth to stdout for verbose")
     parser.add_argument('--server', action='store_true', help='for each line on stdin, immediately output logit line [3.1, -2.1] - the argmax logit[i] is the class i, e.g. 0 negative 1 positive')
-    parser.add_argument('--proto', action='store_true', help='stdin/stdout server: for each protobuf Document labeled_document.proto input, immediately output protobuf LabeledDocument (stdin/stdout); pip install pystream_protobuf; you may need to use python -u run_glue.py')
+    parser.add_argument('--proto', action='store_true', help='stdin/stdout server: for each protobuf Document labeled_document.proto input, immediately output protobuf LabeledDocument (stdin/stdout); you may need to use python -u run_glue.py')
+
     parser.add_argument('--no_cache', action='store_true', help="Never cache evaluation set")
     parser.add_argument("--eval_text", default="", type=str, help="Eval lines of text from this file instead of normal dev.tsv; if no label, fake label 0 is used")
 
@@ -930,7 +978,7 @@ def main():
     # Evaluation
     results = {}
     doeval = args.do_eval
-    if args.proto:
+    if args.proto or args.kafka:
         args.server = True
     if (doeval or args.server) and args.local_rank in [-1, 0]:
         tokenizer = tokenizer_class.from_pretrained(args.output_dir, do_lower_case=args.do_lower_case)
