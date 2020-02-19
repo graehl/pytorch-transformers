@@ -11,7 +11,7 @@ echo >> $textfile
 echo 'Long on JNJ!' >> $textfile
 echo 'The library comprises several example scripts.' >> $textfile
 echo >> $textfile
-cmd="python -u ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 64 --per_gpu_eval_batch_size=32.0 --output_dir finmodel  --verbose_every 1 --server --verbose 0"
+cmd="python -u ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 64 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0"
 set -x
 kafka_in_topic=labelin
 kafka_out_topic=labelout

@@ -759,7 +759,6 @@ def main():
         "--output_dir",
         default=None,
         type=str,
-        required=True,
         help="The output directory where the model predictions and checkpoints will be written.",
     )
 
@@ -856,11 +855,15 @@ def main():
 
     args = parser.parse_args()
 
-    if (
-        os.path.exists(args.output_dir)
-        and os.listdir(args.output_dir)
-        and args.do_train
+    # if loading an already fine-tuned model, no need to specify the path twice
+    if args.output_dir is None and os.path.exists(args.model_name_or_path):
+        args.output_dir = args.model_name_or_path
+
+
+    if (args.do_train
         and not args.overwrite_output_dir
+        and os.path.exists(args.output_dir)
+        and os.listdir(args.output_dir)
     ):
         raise ValueError(
             "Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(
@@ -951,6 +954,7 @@ def main():
         train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)[0]
         global_step, tr_loss = train(args, train_dataset, model, tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
+
 
     # Saving best-practices: if you use defaults names for the model, you can reload it using from_pretrained()
     if args.do_train and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
