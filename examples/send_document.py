@@ -17,6 +17,11 @@ def segment_fn(segment):
         import re
         blanksre = re.compile(r'\s+')
         from ftfy import fix_text
+        try:
+            import nltk.tokenize.punkt
+        except ImportError:
+            import nltk
+            nltk.download("punkt")
         from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
         def text_sentences(text):
             if isinstance(text, bytes):

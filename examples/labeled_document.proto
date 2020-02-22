@@ -5,9 +5,15 @@ message Document {
     repeated string segments = 2; // sentences or lines without any terminating newline
 }
 
+message ImportantWords {
+    required string word = 1;
+    required float importance = 2;
+}
+
 message Label {
     repeated float logits = 1;
     // for sentiment: confidences in negative, positive, neutral. the one that is higher than others = the classification. for empty input string, logits is empty
+    repeated ImportantWords words = 2;
 }
 
 message LabeledDocument {

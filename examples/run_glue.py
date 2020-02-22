@@ -64,7 +64,6 @@ from transformers import is_tf_available
 if is_tf_available():
    from transformers import TFDistilBertForSequenceClassification
 
-from transformers import glue_compute_metrics as compute_metrics
 from transformers import glue_output_modes as output_modes
 from transformers import glue_processors as processors
 
@@ -386,6 +385,8 @@ def log(x):
     sys.stderr.write('#run_glue.py: %s\n' % str(x))
 
 
+from labeled_document_pb2 import ImportantWords
+
 def server(args, model, tokenizer, protobuf=False, verbose=1):
     batchsz = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
     args.eval_batch_size = batchsz
@@ -561,6 +562,7 @@ def evaluate(args, model, tokenizer, prefix="", verbose=1):
             preds = np.argmax(preds, axis=1)
         elif args.output_mode == "regression":
             preds = np.squeeze(preds)
+        from transformers import glue_compute_metrics as compute_metrics
         result = compute_metrics(eval_task, preds, out_label_ids)
         results.update(result)
 
@@ -717,6 +719,9 @@ def main():
     parser = argparse.ArgumentParser()
     from kafka_args import add_kafka_args
     add_kafka_args(parser)
+
+    from explain_args import add_explain_args
+    add_explain_args(parser)
 
     parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
     parser.add_argument('--verbose_every', type=int, default=10, help="show every nth to stdout for verbose")
