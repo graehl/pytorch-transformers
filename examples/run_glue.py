@@ -81,7 +81,33 @@ except ImportError:
     from tensorboardX import SummaryWriter
 
 
+import logging
+class DisableLogger():
+    #with DisableLogger():
+    def __enter__(self):
+       logging.disable(logging.CRITICAL)
+    def __exit__(self, a, b, c):
+       logging.disable(logging.NOTSET)
+
 logger = logging.getLogger(__name__)
+
+loglevelstrs = {'debug': logging.DEBUG,
+                'dbg': logging.DEBUG,
+                'info': logging.INFO,
+                'inf': logging.INFO,
+                'warn': logging.WARNING,
+                'warning': logging.WARNING,
+                'error': logging.ERROR,
+                'err': logging.ERROR,
+                'critical': logging.CRITICAL,
+                'crit': logging.CRITICAL}
+def loglevelstr(x):
+    x = x.lower()
+    if x in loglevelstrs:
+        return loglevelstrs[x]
+    else:
+        return int(x)
+
 
 ALL_MODELS = sum(
     (
@@ -356,20 +382,90 @@ def classify(texts, args, model, tokenizer, verbose=1):
     return r
     #TODO: tokenizer.batch_encode_plus
 
+import labeled_document_pb2 as ld
+
+import re
+def wordre(word):
+    return re.compile(r'\b%s\b' % re.escape(word))
+
+
+from nltk import word_tokenize # for explain
+
+#TODO: something exactly consistent with tokenizer proposing words
+def replaceword(word, repl, line):
+    return re.sub(wordre(word), repl, line)
+
+
+def withoutword(word, line):
+    return replaceword(word, "", line)
+
+
+def with_explanation(iw, line):
+    liner = line
+    for x in iw:
+        w = x.word
+        liner = replaceword(w, '<b>%s</b>' % w, liner)
+    return "%s\t[due to: %s]" % (liner, ' '.join(x.word for x in iw[:5]))
+
 
 def labeldoc(doc, args, model, tokenizer):
-    import labeled_document_pb2 as ld
+    stopwords = set()
+    if not args.explain_stopwords:
+        if not hasattr(args, 'stopwords'):
+            from nltk.corpus import stopwords
+            args.stopwords = set(stopwords.words('english'))
+        stopwords = args.stopwords
     ldoc = ld.LabeledDocument()
     ldoc.document_id = doc.document_id
     sys.stderr.write("# got doc id=%s with %s segments\n" % (doc.document_id, len(doc.segments)))
     start_time = timeit.default_timer()
+    labels = ldoc.labels
     for segment in doc.segments:
         label = ld.Label()
         if len(segment) > 0:
-            label.logits[:] = classify1(segment, args, model, tokenizer)
-        ldoc.labels.append(label)
+            logits = classify1(segment, args, model, tokenizer)
+            label.logits[:] = logits
+            import confidence
+            besti = confidence.arg_max(logits)
+            confi = confidence.confidence_in(logits, besti)
+            log('confidence(%s)=%s for %s %s'%(besti, confi, logits, segment))
+            confbelow = confi - args.explain_epsilon
+            if args.explain:
+                cwords = []
+                uniquewords = confidence.uniqued(word_tokenize(segment))
+                for word in uniquewords:
+                    if word.lower() in stopwords:
+                        #log("skip stopword: '%s'" % word)
+                        continue
+                    if not args.explain_punctuation and not word.isalnum():
+                        #log("skip punc: '%s'" % word)
+                        continue
+                    without = withoutword(word, segment)
+                    if without == segment:
+                        log("no change removing word '%s' from '%s'" % (word, segment))
+                        continue
+                    logits_no_w = classify1(without, args, model, tokenizer)
+                    conf = confidence.confidence_in(logits_no_w, besti)
+                    ouri = confidence.arg_max(logits_no_w)
+                    if besti != ouri:
+                        log("'%s' seems important - class changed from %s to %s %s" % (word, besti, ouri, rounded(logits_no_w)))
+                    if conf < confi:
+                        if conf < confbelow:
+                            cwords.append((word, conf))
+                        else:
+                            log("'%s' was important but not by more than epsilon=%s (%s %s vs %s %s)" % (word, args.explain_epsilon, rounded(confi), rounded(logits), rounded(conf), rounded(logits_no_w)))
+                    else:
+                        #log("'%s' wasn't important (confidence higher without - from %s to %s)" % (word, rounded(confi), rounded(conf)))
+                        pass
+                maxwords = min(int(.99 + len(uniquewords) * args.explain_maxwords_portion), args.explain_maxwords)
+                for word, conf in sorted(cwords, key=lambda x: x[1])[:maxwords]:
+                    w = ld.ImportantWords()
+                    w.word = word
+                    w.importance = confi - conf
+                    label.words.append(w)
+        labels.append(label)
     time = timeit.default_timer() - start_time
-    sys.stderr.write("# writing proto result for doc %s (%s sec)\n" % (ldoc, time))
+    #log("# writing proto result for doc %s (%s sec)\n" % (ldoc, time))
     return ldoc
 
 
@@ -385,14 +481,13 @@ def log(x):
     sys.stderr.write('#run_glue.py: %s\n' % str(x))
 
 
-from labeled_document_pb2 import ImportantWords
+import labeled_document_pb2 as ld
 
 def server(args, model, tokenizer, protobuf=False, verbose=1):
     batchsz = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
     args.eval_batch_size = batchsz
     eof = False
     if args.kafka:
-        import labeled_document_pb2 as ld
         from time import sleep
         from kafka import KafkaProducer, KafkaConsumer
         producer = KafkaProducer(bootstrap_servers=makelist(args.kafka_bootstrap), api_version=args.kafka_api_version)
@@ -421,7 +516,6 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
             if producer is not None: producer.close()
         return
     elif args.proto:
-        import labeled_document_pb2 as ld
         import protostream
         stdout = os.fdopen(sys.stdout.fileno(), "wb", closefd=False) # or sys.stdout.buffer?
         stdin = os.fdopen(sys.stdin.fileno(), "rb", closefd=False) # or sys.stdin.buffer?
@@ -445,9 +539,13 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
             except EOFError:
                 eof = True
             if len(lines) > 0:
-                logits = classify(lines, args, model, tokenizer, verbose)
-                for i, logit in enumerate(logits):
-                    outserver('%s %s' % (label_str(logit), lines[i]))
+                doc = ld.Document()
+                doc.document_id = 'doc#%s' % docid
+                for line in lines:
+                    doc.segments.append(line)
+                ldoc = labeldoc(doc, args, model, tokenizer)
+                for i, l in enumerate(ldoc.labels):
+                    outserver('%s %s' % (label_str(l.logits), with_explanation(l.words, lines[i])))
                 docid += 1
                 lines = []
             elif eof:
@@ -857,7 +955,7 @@ def main():
     parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
     parser.add_argument("--server_ip", type=str, default="", help="For distant debugging.")
     parser.add_argument("--server_port", type=str, default="", help="For distant debugging.")
-
+    parser.add_argument("--log_level", type=str, default="info", help="for python logging")
     args = parser.parse_args()
 
     # if loading an already fine-tuned model, no need to specify the path twice
@@ -900,7 +998,7 @@ def main():
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
-        level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN,
+        level=loglevelstr(args.log_level) if args.local_rank in [-1, 0] else logging.WARN,
     )
     logger.warning(
         "Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",

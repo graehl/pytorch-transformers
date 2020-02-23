@@ -45,9 +45,13 @@ def label_str(x):
     return '%s(+%s)[%s]' % (ibest, rounded(gap), ' '.join(str(rounded(y)) for y in x))
 
 
-def seg_str(docid, i, logits):
-    return '%s\t%s\t%s' % (docid, i + 1, label_str(logits))
+def important_words_str(words):
+    return ' '.join('%s[%s]'%(x.word, rounded(x.importance)) for x in words)
+
+
+def seg_str(docid, i, x):
+    return '%s\t%s\t%s\t%s' % (docid, i + 1, label_str(x.logits), important_words_str(x.words))
 
 
 def doc_str(doc):
-    return '\n'.join(seg_str(doc.document_id, i, x.logits) for i, x in enumerate(doc.labels))
+    return '\n'.join(seg_str(doc.document_id, i, x) for i, x in enumerate(doc.labels))
