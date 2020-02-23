@@ -22,7 +22,7 @@ if [[ $debug = 1 ]] ; then
     pythonargs+=" -m pdb"
     pythonargs=""
 fi
-cmd="$python -u $pythonargs ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 64 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn --explain"
+cmd="$python -u $pythonargs ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 64 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn --explain --explain-maxwords 2"
 set -x
 kafka_in_topic=labelin
 kafka_out_topic=labelout

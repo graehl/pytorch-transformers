@@ -477,6 +477,7 @@ def labeldoc(doc, args, model, tokenizer):
                         pass
                 maxwords = min(int(.99 + len(groupbylc) * args.explain_maxwords_portion), args.explain_maxwords)
                 for ww, conf in sorted(cwords, key=lambda x: x[1])[:maxwords]:
+                    # keep the *lowest* confidence (i.e. most important)
                     word, words = ww
                     iw = ld.ImportantWords()
                     iw.word = word
