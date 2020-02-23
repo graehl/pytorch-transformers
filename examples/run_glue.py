@@ -434,6 +434,7 @@ def labeldoc(doc, args, model, tokenizer):
     for segment in doc.segments:
         label = ld.Label()
         if len(segment) > 0:
+            # TODO: submit the various classify1 (incl args. explain) as a batch for much higher GPU perf
             logits = classify1(segment, args, model, tokenizer)
             label.logits[:] = logits
             import confidence
