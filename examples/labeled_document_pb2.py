@@ -18,48 +18,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=b'\n\x16labeled_document.proto\"1\n\x08\x44ocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x10\n\x08segments\x18\x02 \x03(\t\"C\n\x0eImportantWords\x12\x0c\n\x04word\x18\x01 \x02(\t\x12\x12\n\nimportance\x18\x02 \x02(\x02\x12\x0f\n\x07wordalt\x18\x03 \x03(\t\"7\n\x05Label\x12\x0e\n\x06logits\x18\x01 \x03(\x02\x12\x1e\n\x05words\x18\x02 \x03(\x0b\x32\x0f.ImportantWords\">\n\x0fLabeledDocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x16\n\x06labels\x18\x02 \x03(\x0b\x32\x06.Label'
+  serialized_pb=b'\n\x16labeled_document.proto\"C\n\x0eImportantWords\x12\x0c\n\x04word\x18\x01 \x02(\t\x12\x12\n\nimportance\x18\x02 \x02(\x02\x12\x0f\n\x07wordalt\x18\x03 \x03(\t\"7\n\x05Label\x12\x0e\n\x06logits\x18\x01 \x03(\x02\x12\x1e\n\x05words\x18\x02 \x03(\x0b\x32\x0f.ImportantWords\"1\n\x08\x44ocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x10\n\x08segments\x18\x02 \x03(\t\">\n\x0fLabeledDocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x16\n\x06labels\x18\x02 \x03(\x0b\x32\x06.Label\"\xac\x01\n\x0cLabelOptions\x12\x0f\n\x07\x65xplain\x18\x01 \x01(\x08\x12\x17\n\x0f\x65xplain_epsilon\x18\x02 \x01(\x02\x12\x18\n\x10\x65xplain_maxwords\x18\x03 \x01(\x05\x12 \n\x18\x65xplain_maxwords_portion\x18\x04 \x01(\x02\x12\x19\n\x11\x65xplain_stopwords\x18\x05 \x01(\x08\x12\x1b\n\x13\x65xplain_punctuation\x18\x06 \x01(\x08\"g\n\x14LabelDocumentRequest\x12\x12\n\nrequest_id\x18\x01 \x02(\t\x12\x1b\n\x08\x64ocument\x18\x02 \x03(\x0b\x32\t.Document\x12\x1e\n\x07options\x18\x03 \x01(\x0b\x32\r.LabelOptions'
 )
 
 
-
-
-_DOCUMENT = _descriptor.Descriptor(
-  name='Document',
-  full_name='Document',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='document_id', full_name='Document.document_id', index=0,
-      number=1, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='segments', full_name='Document.segments', index=1,
-      number=2, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto2',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=26,
-  serialized_end=75,
-)
 
 
 _IMPORTANTWORDS = _descriptor.Descriptor(
@@ -102,8 +64,8 @@ _IMPORTANTWORDS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=77,
-  serialized_end=144,
+  serialized_start=26,
+  serialized_end=93,
 )
 
 
@@ -140,7 +102,45 @@ _LABEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=146,
+  serialized_start=95,
+  serialized_end=150,
+)
+
+
+_DOCUMENT = _descriptor.Descriptor(
+  name='Document',
+  full_name='Document',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='document_id', full_name='Document.document_id', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='segments', full_name='Document.segments', index=1,
+      number=2, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=152,
   serialized_end=201,
 )
 
@@ -182,20 +182,128 @@ _LABELEDDOCUMENT = _descriptor.Descriptor(
   serialized_end=265,
 )
 
+
+_LABELOPTIONS = _descriptor.Descriptor(
+  name='LabelOptions',
+  full_name='LabelOptions',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='explain', full_name='LabelOptions.explain', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='explain_epsilon', full_name='LabelOptions.explain_epsilon', index=1,
+      number=2, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='explain_maxwords', full_name='LabelOptions.explain_maxwords', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='explain_maxwords_portion', full_name='LabelOptions.explain_maxwords_portion', index=3,
+      number=4, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='explain_stopwords', full_name='LabelOptions.explain_stopwords', index=4,
+      number=5, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='explain_punctuation', full_name='LabelOptions.explain_punctuation', index=5,
+      number=6, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=268,
+  serialized_end=440,
+)
+
+
+_LABELDOCUMENTREQUEST = _descriptor.Descriptor(
+  name='LabelDocumentRequest',
+  full_name='LabelDocumentRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='request_id', full_name='LabelDocumentRequest.request_id', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='document', full_name='LabelDocumentRequest.document', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='options', full_name='LabelDocumentRequest.options', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=442,
+  serialized_end=545,
+)
+
 _LABEL.fields_by_name['words'].message_type = _IMPORTANTWORDS
 _LABELEDDOCUMENT.fields_by_name['labels'].message_type = _LABEL
-DESCRIPTOR.message_types_by_name['Document'] = _DOCUMENT
+_LABELDOCUMENTREQUEST.fields_by_name['document'].message_type = _DOCUMENT
+_LABELDOCUMENTREQUEST.fields_by_name['options'].message_type = _LABELOPTIONS
 DESCRIPTOR.message_types_by_name['ImportantWords'] = _IMPORTANTWORDS
 DESCRIPTOR.message_types_by_name['Label'] = _LABEL
+DESCRIPTOR.message_types_by_name['Document'] = _DOCUMENT
 DESCRIPTOR.message_types_by_name['LabeledDocument'] = _LABELEDDOCUMENT
+DESCRIPTOR.message_types_by_name['LabelOptions'] = _LABELOPTIONS
+DESCRIPTOR.message_types_by_name['LabelDocumentRequest'] = _LABELDOCUMENTREQUEST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
-Document = _reflection.GeneratedProtocolMessageType('Document', (_message.Message,), {
-  'DESCRIPTOR' : _DOCUMENT,
-  '__module__' : 'labeled_document_pb2'
-  # @@protoc_insertion_point(class_scope:Document)
-  })
-_sym_db.RegisterMessage(Document)
 
 ImportantWords = _reflection.GeneratedProtocolMessageType('ImportantWords', (_message.Message,), {
   'DESCRIPTOR' : _IMPORTANTWORDS,
@@ -211,12 +319,33 @@ Label = _reflection.GeneratedProtocolMessageType('Label', (_message.Message,), {
   })
 _sym_db.RegisterMessage(Label)
 
+Document = _reflection.GeneratedProtocolMessageType('Document', (_message.Message,), {
+  'DESCRIPTOR' : _DOCUMENT,
+  '__module__' : 'labeled_document_pb2'
+  # @@protoc_insertion_point(class_scope:Document)
+  })
+_sym_db.RegisterMessage(Document)
+
 LabeledDocument = _reflection.GeneratedProtocolMessageType('LabeledDocument', (_message.Message,), {
   'DESCRIPTOR' : _LABELEDDOCUMENT,
   '__module__' : 'labeled_document_pb2'
   # @@protoc_insertion_point(class_scope:LabeledDocument)
   })
 _sym_db.RegisterMessage(LabeledDocument)
+
+LabelOptions = _reflection.GeneratedProtocolMessageType('LabelOptions', (_message.Message,), {
+  'DESCRIPTOR' : _LABELOPTIONS,
+  '__module__' : 'labeled_document_pb2'
+  # @@protoc_insertion_point(class_scope:LabelOptions)
+  })
+_sym_db.RegisterMessage(LabelOptions)
+
+LabelDocumentRequest = _reflection.GeneratedProtocolMessageType('LabelDocumentRequest', (_message.Message,), {
+  'DESCRIPTOR' : _LABELDOCUMENTREQUEST,
+  '__module__' : 'labeled_document_pb2'
+  # @@protoc_insertion_point(class_scope:LabelDocumentRequest)
+  })
+_sym_db.RegisterMessage(LabelDocumentRequest)
 
 
 # @@protoc_insertion_point(module_scope)
