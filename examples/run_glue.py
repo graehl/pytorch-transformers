@@ -400,12 +400,23 @@ def withoutword(word, line):
     return replaceword(word, "", line)
 
 
-def with_explanation(iw, line):
-    liner = line
+def withoutwords(words, line):
+    for word in words:
+        line = withoutword(word, line)
+    return line
+
+
+def with_highlighted_words(iw, line):
     for x in iw:
-        w = x.word
-        liner = replaceword(w, '<b>%s</b>' % w, liner)
-    return "%s\t[due to: %s]" % (liner, ' '.join(x.word for x in iw[:5]))
+        line = replaceword(x.word, '<b>%s</b>' % x.word, line)
+        for w in x.wordalt:
+            line = replaceword(w, '<b>%s</b>' % w, line)
+    return line
+
+
+def with_explanation(iw, line, label):
+    line = with_highlighted_words(iw, line)
+    return "%s\t[%s because: %s]" % (line, label, ' '.join(x.word for x in iw))
 
 
 def labeldoc(doc, args, model, tokenizer):
@@ -428,41 +439,52 @@ def labeldoc(doc, args, model, tokenizer):
             import confidence
             besti = confidence.arg_max(logits)
             confi = confidence.confidence_in(logits, besti)
-            log('confidence(%s)=%s for %s %s'%(besti, confi, logits, segment))
+            #log('confidence(%s)=%s for %s %s'%(besti, confi, logits, segment))
             confbelow = confi - args.explain_epsilon
             if args.explain:
                 cwords = []
-                uniquewords = confidence.uniqued(word_tokenize(segment))
-                for word in uniquewords:
-                    if word.lower() in stopwords:
+                groupbylc = confidence.group_by_lc(word_tokenize(segment))
+                for wordlc in groupbylc:
+                    words = groupbylc[wordlc]
+                    if wordlc in stopwords:
                         #log("skip stopword: '%s'" % word)
                         continue
-                    if not args.explain_punctuation and not word.isalnum():
+                    if not args.explain_punctuation and not wordlc.isalnum():
                         #log("skip punc: '%s'" % word)
                         continue
-                    without = withoutword(word, segment)
+                    word = None
+                    for w in words:
+                        if w == wordlc:
+                            word = wordlc
+                        elif word != wordlc:
+                            word = w
+                    without = withoutwords(words, segment)
                     if without == segment:
-                        log("no change removing word '%s' from '%s'" % (word, segment))
+                        log("skipped '%s' no change when removing from '%s'" % (word, segment))
                         continue
                     logits_no_w = classify1(without, args, model, tokenizer)
                     conf = confidence.confidence_in(logits_no_w, besti)
                     ouri = confidence.arg_max(logits_no_w)
-                    if besti != ouri:
-                        log("'%s' seems important - class changed from %s to %s %s" % (word, besti, ouri, rounded(logits_no_w)))
+                    #if besti != ouri: log("'%s' seems important - class changed from %s to %s %s" % (word, besti, ouri, rounded(logits_no_w)))
                     if conf < confi:
                         if conf < confbelow:
-                            cwords.append((word, conf))
+                            cwords.append(((word, words), conf))
                         else:
-                            log("'%s' was important but not by more than epsilon=%s (%s %s vs %s %s)" % (word, args.explain_epsilon, rounded(confi), rounded(logits), rounded(conf), rounded(logits_no_w)))
+                            #log("'%s' was important but not by more than epsilon=%s (%s %s vs %s %s)" % (word, args.explain_epsilon, rounded(confi), rounded(logits), rounded(conf), rounded(logits_no_w)))
+                            pass
                     else:
                         #log("'%s' wasn't important (confidence higher without - from %s to %s)" % (word, rounded(confi), rounded(conf)))
                         pass
-                maxwords = min(int(.99 + len(uniquewords) * args.explain_maxwords_portion), args.explain_maxwords)
-                for word, conf in sorted(cwords, key=lambda x: x[1])[:maxwords]:
-                    w = ld.ImportantWords()
-                    w.word = word
-                    w.importance = confi - conf
-                    label.words.append(w)
+                maxwords = min(int(.99 + len(groupbylc) * args.explain_maxwords_portion), args.explain_maxwords)
+                for ww, conf in sorted(cwords, key=lambda x: x[1])[:maxwords]:
+                    word, words = ww
+                    iw = ld.ImportantWords()
+                    iw.word = word
+                    iw.importance = confi - conf
+                    for c in words:
+                        if c != word:
+                            iw.wordalt.append(c)
+                    label.words.append(iw)
         labels.append(label)
     time = timeit.default_timer() - start_time
     #log("# writing proto result for doc %s (%s sec)\n" % (ldoc, time))
@@ -525,7 +547,7 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
         return
     else:
         docid = 0
-        from kafka_args import label_str
+        from kafka_args import label_gap, label_str, logits_str
         while not eof:
             lines = []
             try:
@@ -545,7 +567,9 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
                     doc.segments.append(line)
                 ldoc = labeldoc(doc, args, model, tokenizer)
                 for i, l in enumerate(ldoc.labels):
-                    outserver('%s %s' % (label_str(l.logits), with_explanation(l.words, lines[i])))
+                    label, gap = label_gap(l.logits)
+                    labelstr = label_str(label)
+                    outserver('%s(+%s)[%s] %s' % (labelstr, rounded(gap), logits_str(l.logits), with_explanation(l.words, lines[i], labelstr)))
                 docid += 1
                 lines = []
             elif eof:

@@ -27,8 +27,7 @@ def rounded(x, digits=2):
         return float(form.format(x)) if isinstance(x, float) else [rx(y) for y in x] if isinstance(x, list) else x
     return rx(x)
 
-
-def label_str(x):
+def label_gap(x):
     ibest = 0
     best = None
     gap = 0
@@ -39,10 +38,22 @@ def label_str(x):
             best = y
         elif best > y:
             gap = min(gap, best - y)
+    return ibest, gap
+
+def label_str(ibest):
     if ibest == 0: ibest = 'NEG'
     elif ibest == 1: ibest = 'POS'
     elif ibest == 2: ibest = 'meh'
-    return '%s(+%s)[%s]' % (ibest, rounded(gap), ' '.join(str(rounded(y)) for y in x))
+    return ibest
+
+
+def logits_str(logits):
+    return ' '.join(str(rounded(x)) for x in logits)
+
+
+def label_gap_str(logits):
+    ibest, gap = label_gap(logits)
+    return '%s(+%s)[%s]' % (label_str(ibest), rounded(gap), logits_str(logits))
 
 
 def important_words_str(words):

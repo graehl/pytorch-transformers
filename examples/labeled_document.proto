@@ -8,6 +8,8 @@ message Document {
 message ImportantWords {
     required string word = 1;
     required float importance = 2;
+    repeated string wordalt = 3;
+    // different case variants not including word, if any (importance is of all taken as a group)
 }
 
 message Label {

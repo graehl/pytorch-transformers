@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=b'\n\x16labeled_document.proto\"1\n\x08\x44ocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x10\n\x08segments\x18\x02 \x03(\t\"2\n\x0eImportantWords\x12\x0c\n\x04word\x18\x01 \x02(\t\x12\x12\n\nimportance\x18\x02 \x02(\x02\"7\n\x05Label\x12\x0e\n\x06logits\x18\x01 \x03(\x02\x12\x1e\n\x05words\x18\x02 \x03(\x0b\x32\x0f.ImportantWords\">\n\x0fLabeledDocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x16\n\x06labels\x18\x02 \x03(\x0b\x32\x06.Label'
+  serialized_pb=b'\n\x16labeled_document.proto\"1\n\x08\x44ocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x10\n\x08segments\x18\x02 \x03(\t\"C\n\x0eImportantWords\x12\x0c\n\x04word\x18\x01 \x02(\t\x12\x12\n\nimportance\x18\x02 \x02(\x02\x12\x0f\n\x07wordalt\x18\x03 \x03(\t\"7\n\x05Label\x12\x0e\n\x06logits\x18\x01 \x03(\x02\x12\x1e\n\x05words\x18\x02 \x03(\x0b\x32\x0f.ImportantWords\">\n\x0fLabeledDocument\x12\x13\n\x0b\x64ocument_id\x18\x01 \x02(\t\x12\x16\n\x06labels\x18\x02 \x03(\x0b\x32\x06.Label'
 )
 
 
@@ -83,6 +83,13 @@ _IMPORTANTWORDS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='wordalt', full_name='ImportantWords.wordalt', index=2,
+      number=3, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -96,7 +103,7 @@ _IMPORTANTWORDS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=77,
-  serialized_end=127,
+  serialized_end=144,
 )
 
 
@@ -133,8 +140,8 @@ _LABEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=129,
-  serialized_end=184,
+  serialized_start=146,
+  serialized_end=201,
 )
 
 
@@ -171,8 +178,8 @@ _LABELEDDOCUMENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=186,
-  serialized_end=248,
+  serialized_start=203,
+  serialized_end=265,
 )
 
 _LABEL.fields_by_name['words'].message_type = _IMPORTANTWORDS
