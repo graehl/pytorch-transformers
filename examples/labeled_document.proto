@@ -15,18 +15,6 @@ message Label {
     repeated ImportantWords words = 2;
 }
 
-message Document {
-    // the request
-    required string document_id = 1;
-    repeated string segments = 2; // sentences or lines without any terminating newline
-}
-
-message LabeledDocument {
-    // the response
-    required string document_id = 1;
-    repeated Label labels = 2; // one to one with segments in Document
-}
-
 message LabelOptions {
     // TODO: unused
     // comment is default value
@@ -38,8 +26,21 @@ message LabelOptions {
     optional bool explain_punctuation = 6; // false // include punctuation as possibly important
 }
 
+message Document {
+    // the request
+    required string document_id = 1;
+    repeated string segments = 2; // sentences or lines without any terminating newline
+    optional LabelOptions options = 3; // TODO: unused
+}
+
+message LabeledDocument {
+    // the response
+    required string document_id = 1;
+    repeated Label labels = 2; // one to one with segments in Document
+}
+
 message LabelDocumentRequest {
-    // TODO: unused
+    // TODO: unused, unnecessary? just send multiple Document and use unique document_id?
     required string request_id = 1;
     repeated Document document = 2;
     optional LabelOptions options = 3;
