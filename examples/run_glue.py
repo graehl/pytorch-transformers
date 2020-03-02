@@ -406,16 +406,28 @@ def withoutwords(words, line):
     return line
 
 
-def with_highlighted_words(iw, line):
+def with_highlighted_words(iw, line, color=None):
+    if color is None:
+        on='<b>'
+        off='</b>'
+    else:
+        on = '<b><font color="%s">' % color
+        off = '</font></b>'
     for x in iw:
-        line = replaceword(x.word, '<b>%s</b>' % x.word, line)
+        w = x.word
+        line = replaceword(w, on + w + off, line)
         for w in x.wordalt:
-            line = replaceword(w, '<b>%s</b>' % w, line)
+            line = replaceword(w, on + w + off, line)
     return line
 
 
+def label_color(label):
+    return 'red' if label == 'NEG' else 'green' if label == 'POS' else None
+
+
 def with_explanation(iw, line, label):
-    line = with_highlighted_words(iw, line)
+    line = with_highlighted_words(iw, line, color=label_color(label))
+    return line
     return "%s\t[%s because: %s]" % (line, label, ' '.join(x.word for x in iw))
 
 
