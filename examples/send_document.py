@@ -67,23 +67,13 @@ def segmented_document(lines, segmenter):
 def makelist(x):
     return x if isinstance(x, list) else [x]
 
-
-def main(args):
+def stdin_docs(args):
     segment = not args.segmented
     if segment:
         log("text (to be segmented) on STDIN; terminate documents by blank line or EOF")
     else:
         log("segments one per line on STDIN; terminate documents by blank line or EOF")
     segmenter = segment_fn(segment)
-    stdout = os.fdopen(sys.stdout.fileno(), "wb", closefd=False) # or sys.stdout.buffer?
-
-    if hasattr(args, 'kafka') and args.kafka:
-        from kafka import KafkaProducer
-        producer = KafkaProducer(bootstrap_servers=makelist(args.kafka_bootstrap), api_version=args.kafka_api_version)
-        ostream = None
-    else:
-        producer = None
-        ostream = protostream.open(fileobj=stdout, mode='wb')
     eof = False
     savefile = None
     if args.segments_out is not None:
@@ -103,30 +93,49 @@ def main(args):
         if len(lines) > 0:
             log("sending doc of %s segments" % len(lines))
             doc = segmented_document(lines, segmenter)
-            for i, segment in enumerate(doc.segments):
-                savefile.write('%s\t%s\t%s\n' % (doc.document_id, i+1, segment))
-            if producer is not None:
-                value = doc.SerializeToString()
-                future = producer.send(args.kafka_in_topic, key=doc.document_id.encode('utf-8'), value=value)
-                try:
-                    record_metadata = future.get(timeout=10)
-                    log("wrote %s: %s" % (str(record_metadata), value))
-                except Exception as e:
-                    log("exception: %s" % e)
-                    raise e
-            if ostream is not None:
-                ostream.write(doc)
-            lines = []
+            if savefile is not None:
+                for i, segment in enumerate(doc.segments):
+                    savefile.write('%s\t%s\t%s\n' % (doc.document_id, i+1, segment))
+            yield doc
     if savefile is not None:
         log("saved unlabeled segments in %s" % args.segments_out)
+        savefile.close()
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    from kafka_args import add_kafka_args
-    parser.add_argument("--segmented", action='store_true', help='input already segmented one per line')
+
+def main(args):
+    stdout = os.fdopen(sys.stdout.fileno(), "wb", closefd=False) # or sys.stdout.buffer?
+
+    if hasattr(args, 'kafka') and args.kafka:
+        from kafka import KafkaProducer
+        producer = KafkaProducer(bootstrap_servers=makelist(args.kafka_bootstrap), api_version=args.kafka_api_version)
+        ostream = None
+    else:
+        producer = None
+        ostream = protostream.open(fileobj=stdout, mode='wb')
+
+    for doc in stdin_docs(args):
+        if producer is not None:
+            value = doc.SerializeToString()
+            future = producer.send(args.kafka_in_topic, key=doc.document_id.encode('utf-8'), value=value)
+            try:
+                record_metadata = future.get(timeout=10)
+                log("wrote %s: %s" % (str(record_metadata), value))
+            except Exception as e:
+                log("exception: %s" % e)
+                raise e
+        if ostream is not None:
+            ostream.write(doc)
+
+
+def add_send_document_args(parser):
+    parser.add_argument("--segmented", action='store_true', help='input already segmented one per line', default=False)
     parser.add_argument("--batch-num-segments", type=int, help='split input docs into at most this many segments')
     parser.add_argument("--segments-out", type=str, help='store all segments in this file', default='sent-docs.txt')
 
-    add_kafka_args(parser)
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    add_send_document_args(parser)
+    from kafka_args import add_kafka_args
+    add_kafka_args(parser)
     main(parser.parse_args())

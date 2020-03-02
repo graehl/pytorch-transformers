@@ -384,52 +384,8 @@ def classify(texts, args, model, tokenizer, verbose=1):
 
 import labeled_document_pb2 as ld
 
-import re
-def wordre(word):
-    return re.compile(r'\b%s\b' % re.escape(word))
-
-
-from nltk import word_tokenize # for explain
-
-#TODO: something exactly consistent with tokenizer proposing words
-def replaceword(word, repl, line):
-    return re.sub(wordre(word), repl, line)
-
-
-def withoutword(word, line):
-    return replaceword(word, "", line)
-
-
-def withoutwords(words, line):
-    for word in words:
-        line = withoutword(word, line)
-    return line
-
-
-def with_highlighted_words(iw, line, color=None):
-    if color is None:
-        on='<b>'
-        off='</b>'
-    else:
-        on = '<b><font color="%s">' % color
-        off = '</font></b>'
-    for x in iw:
-        w = x.word
-        line = replaceword(w, on + w + off, line)
-        for w in x.wordalt:
-            line = replaceword(w, on + w + off, line)
-    return line
-
-
-def label_color(label):
-    return 'red' if label == 'NEG' else 'green' if label == 'POS' else None
-
-
-def with_explanation(iw, line, label):
-    line = with_highlighted_words(iw, line, color=label_color(label))
-    return line
-    return "%s\t[%s because: %s]" % (line, label, ' '.join(x.word for x in iw))
-
+import regex
+allpunc = regex.compile(r'^\p{P}*$')
 
 def labeldoc(doc, args, model, tokenizer):
     stopwords = set()
@@ -443,10 +399,12 @@ def labeldoc(doc, args, model, tokenizer):
     sys.stderr.write("# got doc id=%s with %s segments\n" % (doc.document_id, len(doc.segments)))
     start_time = timeit.default_timer()
     labels = ldoc.labels
+    import explanation
     for segment in doc.segments:
         label = ld.Label()
         if len(segment) > 0:
             # TODO: submit the various classify1 (incl args. explain) as a batch for much higher GPU perf
+            segment = explanation.normalize_punctuation(segment)
             logits = classify1(segment, args, model, tokenizer)
             label.logits[:] = logits
             import confidence
@@ -456,14 +414,16 @@ def labeldoc(doc, args, model, tokenizer):
             confbelow = confi - args.explain_epsilon
             if args.explain:
                 cwords = []
-                groupbylc = confidence.group_by_lc(word_tokenize(segment))
+                groupbylc = confidence.group_by_lc(explanation.candidate_words(segment))
                 for wordlc in groupbylc:
                     words = groupbylc[wordlc]
                     if wordlc in stopwords:
                         #log("skip stopword: '%s'" % word)
                         continue
-                    if not args.explain_punctuation and not wordlc.isalnum():
-                        #log("skip punc: '%s'" % word)
+                    punc = allpunc.match(wordlc)
+                    #if punc: log("punc: '%s'" % wordlc)
+                    if (not args.explain_punctuation) and punc:
+                        #log("skip punc: '%s'" % wordlc)
                         continue
                     word = None
                     for w in words:
@@ -471,7 +431,7 @@ def labeldoc(doc, args, model, tokenizer):
                             word = wordlc
                         elif word != wordlc:
                             word = w
-                    without = withoutwords(words, segment)
+                    without = explanation.withoutwords(words, segment)
                     if without == segment:
                         log("skipped '%s' no change when removing from '%s'" % (word, segment))
                         continue
@@ -520,6 +480,7 @@ def log(x):
 import labeled_document_pb2 as ld
 
 def server(args, model, tokenizer, protobuf=False, verbose=1):
+    import explanation
     batchsz = int(args.per_gpu_eval_batch_size * max(1, args.n_gpu))
     args.eval_batch_size = batchsz
     eof = False
@@ -560,34 +521,15 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
                 ostream.write(labeldoc(doc, args, model, tokenizer))
         return
     else:
-        docid = 0
         from kafka_args import label_gap, label_str, logits_str
-        while not eof:
-            lines = []
-            try:
-                while True:
-                    line = input()
-                    assert line is not None
-                    line = line.strip()
-                    if len(line) == 0: break
-                    lines.append(line)
-                    if len(lines) >= batchsz: break
-            except EOFError:
-                eof = True
-            if len(lines) > 0:
-                doc = ld.Document()
-                doc.document_id = 'doc#%s' % docid
-                for line in lines:
-                    doc.segments.append(line)
-                ldoc = labeldoc(doc, args, model, tokenizer)
-                for i, l in enumerate(ldoc.labels):
-                    label, gap = label_gap(l.logits)
-                    labelstr = label_str(label)
-                    outserver('%s(+%s)[%s] %s' % (labelstr, rounded(gap), logits_str(l.logits), with_explanation(l.words, lines[i], labelstr)))
-                docid += 1
-                lines = []
-            elif eof:
-                outserver('')
+        import send_document
+        for doc in send_document.stdin_docs(args):
+            ldoc = labeldoc(doc, args, model, tokenizer)
+            for i, l in enumerate(ldoc.labels):
+                label, gap = label_gap(l.logits)
+                labelstr = label_str(label)
+                outserver('%s(+%s)[%s] %s' % (labelstr, rounded(gap), logits_str(l.logits), explanation.with_explanation(l.words, doc.segments[i], labelstr, args)))
+            outserver('')
 
 
 def evaluate(args, model, tokenizer, prefix="", verbose=1):
@@ -858,6 +800,12 @@ def main():
 
     from explain_args import add_explain_args
     add_explain_args(parser)
+
+    from send_document import add_send_document_args
+    add_send_document_args(parser)
+
+    import explanation
+    explanation.add_explanation_args(parser)
 
     parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
     parser.add_argument('--verbose_every', type=int, default=10, help="show every nth to stdout for verbose")
