@@ -64,6 +64,8 @@ else
     hf=$textfile.sentiment-importance.html
     out=$textfile.out
     rm $hf
+    set -o pipefail
+    set -e
     ( header; $cmd < $textfile | tee $out ) | tee $hf
     echo $0/$hf
     echo $out

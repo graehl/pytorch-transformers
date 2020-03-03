@@ -1,18 +1,41 @@
 import regex
 def wordre(word):
-    return regex.compile(r'(?:\b|(?<=(?:\p{P}|\s)))%s(?:\b|(?=(?:\p{P}|\s)))' % regex.escape(word))
+    return regex.compile(r'(?:^|\b|(?<=(?:\p{P}|\s)))%s(?:$|\b|(?=(?:\p{P}|\s)))' % regex.escape(word))
 
 
 def normalize_punctuation(x):
-    return x.replace(u"\u2018", "'").replace(u"\u2019", "'").replace(u"\u201c",'"').replace(u"\u201d", '"')
-    # TODO: Â£ encoding error why? # .replace(u"Â", "")
+    x = x.replace(u"\u2018", "'").replace(u"\u2019", "'")
+    x = x.replace(u"\u201c",'"').replace(u"\u201d", '"')
+    x = x.replace(u"\u0060","`").replace("``", '"').replace(u"''", '"')
+    return x
 
 
 from nltk import word_tokenize # for explain
 
 
 def candidate_words(line):
-    return word_tokenize(line)
+    words = word_tokenize(line)
+    if len(words) == 0: return words
+    r = []
+    oversplits = {"got":"ta"}
+    for i in range(len(words) - 1):
+        w = words[i]
+        suf = oversplits.get(w, None)
+        if words[i + 1] == suf:
+            words[i] += words[i+1]
+            words[i + 1] = None
+    suffixes = set(["n't", "n't"])
+    lastw = None
+    for w in words:
+        if w in suffixes:
+            lastw = w if lastw is None else lastw + w
+            w = None
+        if lastw is not None:
+            r.append(lastw)
+        lastw = w
+    if lastw not in suffixes and lastw is not None:
+        r.append(lastw)
+    return r
 
 
 #TODO: something exactly consistent with tokenizer proposing words
@@ -46,7 +69,7 @@ def interpolate_tuple(bg, fg, alpha):
     return tuple(b + (f - b) * alpha for b, f in zip(bg, fg))
 
 
-def with_highlighted_words(iw, line, color=None, black=(0,0,0), minalpha=.2, confluence=False):
+def with_highlighted_words(iw, line, color=None, black=(0,0,0), minalpha=.1, confluence=False):
     if len(iw) == 0: return line
     maximport = max(x.importance for x in iw)
     if maximport == 0: return line

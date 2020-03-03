@@ -147,7 +147,7 @@ stdout_verbose_every = 1
 
 
 def rounded(x, digits=3):
-    form = "{0:.%sf}".format(digits)
+    form = "{0:.%sf}" % digits
     def rx(x):
         return float(form.format(x)) if isinstance(x, float) else [rx(y) for y in x] if isinstance(x, list) else x
     return rx(x)
@@ -433,7 +433,7 @@ def labeldoc(doc, args, model, tokenizer):
                             word = w
                     without = explanation.withoutwords(words, segment)
                     if without == segment:
-                        log("skipped '%s' no change when removing from '%s'" % (word, segment))
+                        log("skipped '%s' (punc=%s) no change when removing from '%s'" % (word, allpunc.match(wordlc), segment))
                         continue
                     logits_no_w = classify1(without, args, model, tokenizer)
                     conf = confidence.confidence_in(logits_no_w, besti)
