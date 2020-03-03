@@ -10,11 +10,12 @@ def normalize_punctuation(x):
     return x
 
 
-from nltk import word_tokenize # for explain
+from nltk import word_tokenize
 
 
 def candidate_words(line):
     words = word_tokenize(line)
+    # TODO: span_tokenize and return spans too
     if len(words) == 0: return words
     r = []
     oversplits = {"got":"ta"}

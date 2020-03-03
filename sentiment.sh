@@ -18,9 +18,11 @@ echo 'The library comprises several example scripts.' >> $textfile
 echo >> $textfile
 textfile=tests/fixtures/sample_text.txt
 textfile2=tests/sdlfin.txt
-textfile2=tests/dev.txt
-if [[ -f $textfile2 ]] ; then
-    textfile=$textfile2
+devtextfile=tests/dev2.txt
+dev=${dev:-1}
+if [[ $dev = 1 && -f $devtextfile ]] ; then
+    brief=1
+    textfile=$devtextfile
     echo
 fi
 python=${python:-python}
@@ -70,9 +72,10 @@ else
     echo $0/$hf
     echo $out
     if [[ $brief = 1  ]] ; then
-        cut -c1 < $out > $textfile.cls
+        cut -c1 < $out | head -n -1 > $textfile.cls
     fi
     wc -l $out $textfile.cls
+    python tests/accuracy.py tests/dev2.gold $textfile.cls
     if [[ $open = 1 && -s $hf ]]; then
         open $hf
     fi

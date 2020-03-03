@@ -416,7 +416,6 @@ def labeldoc(doc, args, model, tokenizer):
                 cwords = []
                 groupbylc = confidence.group_by_lc(explanation.candidate_words(segment))
                 for wordlc in groupbylc:
-                    words = groupbylc[wordlc]
                     if wordlc in stopwords:
                         #log("skip stopword: '%s'" % word)
                         continue
@@ -425,15 +424,15 @@ def labeldoc(doc, args, model, tokenizer):
                     if (not args.explain_punctuation) and punc:
                         #log("skip punc: '%s'" % wordlc)
                         continue
+                    words = groupbylc[wordlc]
                     word = None
                     for w in words:
-                        if w == wordlc:
-                            word = wordlc
-                        elif word != wordlc:
+                        if word != wordlc:
                             word = w
+                    if len(words) > 1: log("variants %s <= %s" % (word, words))
                     without = explanation.withoutwords(words, segment)
                     if without == segment:
-                        log("skipped '%s' (punc=%s) no change when removing from '%s'" % (word, allpunc.match(wordlc), segment))
+                        log("skipped '%s' (punc=%s) no change when removing from '%s' words=%s" % (word, allpunc.match(word), segment, words))
                         continue
                     logits_no_w = classify1(without, args, model, tokenizer)
                     conf = confidence.confidence_in(logits_no_w, besti)
