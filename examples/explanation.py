@@ -91,11 +91,20 @@ def html_escape_highlights(line):
     return ''.join(html_escape(x) if i % 2 == 0 else x for i, x in enumerate(regex.split(hre, line)))
 
 
+def extended(r, xs):
+    r.extend(xs)
+    return r
+
+
 def with_explanation(iw, line, label, args):
+    if args.brief_explanation:
+        return '\t'.join(' '.join(extended(['{0:.3f}'.format(x.importance), x.word], x.wordalt)) for x in iw)
     line = with_highlighted_words(iw, line, color=label_color(label), confluence=args.confluence_markup)
+    if args.confluence_markup: return line
     return '%s<br/>' % html_escape_highlights(line)
     return "%s\t[%s because: %s]" % (line, label, ' '.join(x.word for x in iw))
 
 
 def add_explanation_args(parser):
     parser.add_argument('--confluence-markup', action='store_true', help='output confluence wiki format, not HTML', default=False)
+    parser.add_argument('--brief-explanation', action='store_true', help='output just list of important words and importance, not whole input', default=False)

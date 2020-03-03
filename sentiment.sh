@@ -20,7 +20,7 @@ textfile=tests/fixtures/sample_text.txt
 textfile2=tests/sdlfin.txt
 textfile2=tests/dev.txt
 if [[ -f $textfile2 ]] ; then
-    #textfile=$textfile2
+    textfile=$textfile2
     echo
 fi
 python=${python:-python}
@@ -29,7 +29,16 @@ if [[ $debug = 1 ]] ; then
     pythonargs=""
 fi
 confluence=${confluence:-0}
-cmd="$python -u $pythonargs ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 64 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn --explain --explain-maxwords 7 --explain-punctuation False --segmented"
+explainarg=""
+explain=${explain:-1}
+if [[ $explain = 1 ]] ; then
+    explainarg="--explain"
+fi
+brief=${brief:-1}
+if [[ $brief = 1 ]] ; then
+    briefarg="--brief-explanation"
+fi
+cmd="$python -u $pythonargs ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 128 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
 if [[ $confluence = 1 ]] ; then
     cmd+=" --confluence-markup"
 fi
@@ -53,9 +62,15 @@ elif [[ $1 = -k ]] ; then
     echo python -u ./examples/send_document.py $kafkas
 else
     hf=$textfile.sentiment-importance.html
+    out=$textfile.out
     rm $hf
-    ( header; $cmd < $textfile) | tee $hf
+    ( header; $cmd < $textfile | tee $out ) | tee $hf
     echo $0/$hf
+    echo $out
+    if [[ $brief = 1  ]] ; then
+        cut -c1 < $out > $textfile.cls
+    fi
+    wc -l $out $textfile.cls
     if [[ $open = 1 && -s $hf ]]; then
         open $hf
     fi

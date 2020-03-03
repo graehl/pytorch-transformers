@@ -147,7 +147,7 @@ stdout_verbose_every = 1
 
 
 def rounded(x, digits=3):
-    form = "{0:.%sf}" % digits
+    form = "{0:.%sf}".format(digits)
     def rx(x):
         return float(form.format(x)) if isinstance(x, float) else [rx(y) for y in x] if isinstance(x, list) else x
     return rx(x)
@@ -365,7 +365,7 @@ def train(args, train_dataset, model, tokenizer):
 
 
 def classify1(text, args, model, tokenizer):
-    x = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt')
+    x = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt', max_length=args.max_length)
     tensor = model(x['input_ids'], token_type_ids=x['token_type_ids'] if args.model_type in ['bert', 'xlnet'] else None)
     return tensor[0].tolist()[0]
     #.to_list
@@ -528,7 +528,12 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
             for i, l in enumerate(ldoc.labels):
                 label, gap = label_gap(l.logits)
                 labelstr = label_str(label)
-                outserver('%s(+%s)[%s] %s' % (labelstr, rounded(gap), logits_str(l.logits), explanation.with_explanation(l.words, doc.segments[i], labelstr, args)))
+                explained = explanation.with_explanation(l.words, doc.segments[i], labelstr, args)
+                if args.brief_explanation:
+                    out = '%s %s\t%s' % (label, logits_str(l.logits), explained)
+                else:
+                    out = '%s(+%s)[%s] %s' % (labelstr, rounded(gap), logits_str(l.logits), explained)
+                outserver(out)
             outserver('')
 
 
@@ -793,19 +798,11 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels)
     return (dataset, examples)
 
+
 def main():
     parser = argparse.ArgumentParser()
-    from kafka_args import add_kafka_args
-    add_kafka_args(parser)
-
-    from explain_args import add_explain_args
-    add_explain_args(parser)
-
-    from send_document import add_send_document_args
-    add_send_document_args(parser)
-
-    import explanation
-    explanation.add_explanation_args(parser)
+    import server_args
+    server_args.add_server_args(parser)
 
     parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
     parser.add_argument('--verbose_every', type=int, default=10, help="show every nth to stdout for verbose")
@@ -1093,6 +1090,7 @@ def main():
                 result = dict((k + "_{}".format(global_step), v) for k, v in result.items())
                 results.update(result)
             if args.server and i+1 == len(checkpoints):
+                model.eval()
                 server(args, model, tokenizer, verbose=args.verbose)
 
     return results
