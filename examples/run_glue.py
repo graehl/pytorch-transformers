@@ -382,17 +382,27 @@ def classify(texts, args, model, tokenizer, verbose=1):
     return r
     #TODO: tokenizer.batch_encode_plus
 
+
 import labeled_document_pb2 as ld
 
 import regex
 allpunc = regex.compile(r'^\p{P}*$')
 
+
+def nltk_stopwords(lang='english'):
+    import nltk
+    try:
+        return nltk.corpus.stopwords.words(lang)
+    except:
+        nltk.download('stopwords', quiet=True)
+        return nltk.corpus.stopwords.words(lang)
+
+
 def labeldoc(doc, args, model, tokenizer):
     stopwords = set()
     if not args.explain_stopwords:
         if not hasattr(args, 'stopwords'):
-            from nltk.corpus import stopwords
-            args.stopwords = set(stopwords.words('english'))
+            args.stopwords = set(nltk_stopwords())
         stopwords = args.stopwords
     ldoc = ld.LabeledDocument()
     ldoc.document_id = doc.document_id
@@ -429,7 +439,7 @@ def labeldoc(doc, args, model, tokenizer):
                     for w in words:
                         if word != wordlc:
                             word = w
-                    if len(words) > 1: log("variants %s <= %s" % (word, words))
+                    #if len(words) > 1: log("variants %s <= %s" % (word, words))
                     without = explanation.withoutwords(words, segment)
                     if without == segment:
                         log("skipped '%s' (punc=%s) no change when removing from '%s' words=%s" % (word, allpunc.match(word), segment, words))

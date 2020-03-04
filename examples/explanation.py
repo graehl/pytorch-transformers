@@ -4,16 +4,29 @@ def wordre(word):
 
 
 def normalize_punctuation(x):
+    try:
+        from ftfy import fix_text
+        x = fix_text(x)
+    except ImportError:
+        pass
     x = x.replace(u"\u2018", "'").replace(u"\u2019", "'")
     x = x.replace(u"\u201c",'"').replace(u"\u201d", '"')
     x = x.replace(u"\u0060","`").replace("``", '"').replace(u"''", '"')
     return x
 
 
-from nltk import word_tokenize
+def nltk_download_word_tokenize():
+    import nltk
+    try:
+        import nltk.tokenize.punkt
+        nltk.word_tokenize('')
+    except:
+        nltk.download("punkt", quiet=True)
 
 
 def candidate_words(line):
+    nltk_download_word_tokenize()
+    from nltk import word_tokenize
     words = word_tokenize(line)
     # TODO: span_tokenize and return spans too
     if len(words) == 0: return words

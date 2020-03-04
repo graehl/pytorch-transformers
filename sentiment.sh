@@ -1,7 +1,9 @@
 cd `dirname $0`
 export PATH=/usr/local/anaconda3/bin:$PATH
-if [[ $rebuild ]] ; then
-  (cd examples; ./build_proto.sh)
+if [[ $rebuild = 1 ]] ; then
+    (cd examples; ./build_proto.sh)
+    pip install -r requirements.txt
+    pip install -r examples/requirements.txt
   pip install .
 fi
 mkdir -p unusedin
@@ -19,6 +21,7 @@ echo >> $textfile
 textfile=tests/fixtures/sample_text.txt
 textfile2=tests/sdlfin.txt
 devtextfile=tests/dev2.txt
+devtextgold=$devtextfile.gold
 dev=${dev:-1}
 if [[ $dev = 1 && -f $devtextfile ]] ; then
     brief=1
@@ -40,7 +43,7 @@ brief=${brief:-1}
 if [[ $brief = 1 ]] ; then
     briefarg="--brief-explanation"
 fi
-cmd="$python -u $pythonargs ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 128 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
+cmd="$python -u $pythonargs ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel3 --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 128 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
 if [[ $confluence = 1 ]] ; then
     cmd+=" --confluence-markup"
 fi
@@ -65,17 +68,18 @@ elif [[ $1 = -k ]] ; then
 else
     hf=$textfile.sentiment-importance.html
     out=$textfile.out
-    rm $hf
+    rm -f $hf $out
+    wc -l $textfile
     set -o pipefail
     set -e
     ( header; $cmd < $textfile | tee $out ) | tee $hf
     echo $0/$hf
     echo $out
-    if [[ $brief = 1  ]] ; then
-        cut -c1 < $out | head -n -1 > $textfile.cls
+    cut -c1 < $out | head -n -1 > $textfile.cls
+    wc -l $out $textfile.cls $textfile
+    if [[ $dev = 1 ]] ; then
+        python tests/accuracy.py $devtextgold $textfile.cls
     fi
-    wc -l $out $textfile.cls
-    python tests/accuracy.py tests/dev2.gold $textfile.cls
     if [[ $open = 1 && -s $hf ]]; then
         open $hf
     fi

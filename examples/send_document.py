@@ -21,7 +21,7 @@ def segment_fn(segment):
             import nltk.tokenize.punkt
         except ImportError:
             import nltk
-            nltk.download("punkt")
+            nltk.download("punkt", quiet=True)
         from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
         def text_sentences(text):
             if isinstance(text, bytes):
