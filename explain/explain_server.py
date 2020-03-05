@@ -154,14 +154,6 @@ def rounded(x, digits=3):
 
 
 import sys
-def outverbose(s, v=1, seq=0):
-    s += '\n'
-    if verbose_outfile is not None:
-        verbose_outfile.write(s)
-    if verbosity >= v:
-        if seq % stdout_verbose_every == 0:
-            sys.stdout.write('#%s: %s' % (seq, s))
-
 
 def set_seed(args):
     random.seed(args.seed)
@@ -170,15 +162,6 @@ def set_seed(args):
     if args.n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
-
-def batch_inputs(batch, model_type):
-    inputs = {'input_ids':      batch[0],
-              'attention_mask': batch[1],
-              'labels':         batch[3]}
-    if model_type != 'distilbert':
-        inputs['token_type_ids'] = batch[2] if model_type in ['bert', 'xlnet'] else None
-        # XLM and RoBERTa and distilbert don't use segment (token_type_ids) ids
-    return inputs
 
 
 def classify1(text, args, model, tokenizer):
@@ -305,7 +288,8 @@ def log(x):
 
 import labeled_document_pb2 as ld
 
-def server(args, model, tokenizer, protobuf=False, verbose=1):
+def server(args, model, tokenizer):
+    verbose = args.verbose
     model.to(args.device)
     model.eval()
     import explanation
@@ -365,9 +349,8 @@ def server(args, model, tokenizer, protobuf=False, verbose=1):
             outserver('')
 
 
-def get_tokenizer_config(model_path, do_lower_case_default=None):
+def get_tokenizer_config(model_path):
     '''This looks like it ought to work in AutoConfig (see tokenization_utils.py), but doesn't'''
-    cfg = {}
     f = '%s/tokenizer_config.json' % model_path
     if not os.path.exists(f):
         f = model_path
@@ -375,24 +358,19 @@ def get_tokenizer_config(model_path, do_lower_case_default=None):
         import json
         with open(f, 'r') as reader:
             text = reader.read()
-        cfg = json.loads(text)
+        return json.loads(text)
     except:
-        pass
-    if 'do_lower_case' not in cfg:
-        cfg['do_lower_case'] = do_lower_case_default
-    return cfg
+        return {}
 
 
 def main():
     parser = argparse.ArgumentParser()
     import server_args
     server_args.add_server_args(parser)
-    import deprecated_args
-    deprecated_args.add_deprecated_args(parser)
+    #import deprecated_args
+    #deprecated_args.add_deprecated_args(parser)
 
-    parser.add_argument('--verbose', type=int, default=1, help="show eval logits => stdout (every n) and verbose.txt")
-    parser.add_argument('--verbose_every', type=int, default=10, help="show every nth to stdout for verbose")
-    parser.add_argument('--server', action='store_true', help='for each line on stdin, immediately output logit line [3.1, -2.1] - the argmax logit[i] is the class i, e.g. 0 negative 1 positive')
+    parser.add_argument('--verbose', type=int, default=1, help="logging verbosity")
     parser.add_argument('--proto', action='store_true', help='stdin/stdout server: for each protobuf Document labeled_document.proto input, immediately output protobuf LabeledDocument (stdin/stdout); you may need to use python -u run_glue.py')
 
 
@@ -440,12 +418,16 @@ def main():
         help="Where do you want to store the pre-trained models downloaded from s3",
     )
     parser.add_argument(
-        "--do_lower_case", action="store_true", help="Set this flag if you are using an uncased model.",
+        "--do_lower_case", action="store_true", help="Set this flag if you are using an uncased model (will use model/tokenizer_config.json if present - this is a fallback).",
+    )
+    parser.add_argument(
+        "--max_length", type=int, default=512, help="Set this flag if you are using an uncased model (will use model/tokenizer_config.json if present - this is a fallback).",
+    )
+
+    parser.add_argument(
+        "--per_gpu_eval_batch_size", default=8, type=float, help="Batch size per GPU/CPU for evaluation.",
     )
     parser.add_argument("--no_cuda", action="store_true", help="Avoid using CUDA when available")
-    parser.add_argument(
-        "--overwrite_cache", action="store_true", help="Overwrite the cached training and evaluation sets",
-    )
     parser.add_argument("--seed", type=int, default=42, help="random seed for initialization")
 
     parser.add_argument("--server_ip", type=str, default="", help="For distant debugging.")
@@ -472,15 +454,16 @@ def main():
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
-        level=loglevelstr(args.log_level) if args.local_rank in [-1, 0] else logging.WARN,
+        level=loglevelstr(args.log_level)
     )
 
     # Set seed
     set_seed(args)
 
 
-    tokenizer_config_dict = get_tokenizer_config(args.model_name_or_path, do_lower_case_default=args.do_lower_case)
-    do_lower_case = tokenizer_config_dict['do_lower_case']
+    tokenizer_config_dict = get_tokenizer_config(args.model_name_or_path)
+    do_lower_case = tokenizer_config_dict.get('do_lower_case', args.do_lower_case)
+    max_length = tokenizer_config_dict.get('max_len', args.max_length)
 
     if args.model_type == 'auto' or (args.num_labels is None and args.task_name is None):
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -521,7 +504,7 @@ def main():
 
     logger.info("parameters %s", args)
     logging.getLogger("transformers.modeling_utils").setLevel(logging.WARN)
-    server(args, model, tokenizer, verbose=args.verbose)
+    server(args, model, tokenizer)
 
 
 if __name__ == "__main__":

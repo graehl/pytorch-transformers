@@ -21,9 +21,6 @@ def add_deprecated_args(parser):
         "--per_gpu_train_batch_size", default=8, type=float, help="Batch size per GPU/CPU for training.",
     )
     parser.add_argument(
-        "--per_gpu_eval_batch_size", default=8, type=float, help="Batch size per GPU/CPU for evaluation.",
-    )
-    parser.add_argument(
         "--gradient_accumulation_steps",
         type=int,
         default=1,
@@ -78,4 +75,10 @@ def add_deprecated_args(parser):
         type=int,
         help="The maximum total input sequence length after tokenization. Sequences longer "
         "than this will be truncated (in training?), sequences shorter will be padded.",
+    )
+
+    parser.add_argument('--verbose_every', type=int, default=10, help="show every nth to stdout for verbose")
+    parser.add_argument('--server', action='store_true', help='for each line on stdin, immediately output logit line [3.1, -2.1] - the argmax logit[i] is the class i, e.g. 0 negative 1 positive')
+    parser.add_argument(
+        "--overwrite_cache", action="store_true", help="Overwrite the cached training and evaluation sets",
     )

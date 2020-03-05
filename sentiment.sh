@@ -24,10 +24,18 @@ textfile2=tests/sdlfin.txt
 devtextfile=tests/dev2.txt
 devtextgold=$devtextfile.gold
 dev=${dev:-0}
+deveval=${deveval:-0}
 if [[ $dev = 1 && -f $devtextfile ]] ; then
-    brief=1
     textfile=$devtextfile
+    if [[ $deveval = 1 ]] ; then
+      brief=1
+    fi
     echo
+else
+    deveval=0
+    if [[ -f $textfile2 ]]; then
+        textfile=$textfile2
+    fi
 fi
 python=${python:-python}
 if [[ $debug = 1 ]] ; then
@@ -40,14 +48,18 @@ explain=${explain:-1}
 if [[ $explain = 1 ]] ; then
     explainarg="--explain"
 fi
-brief=${brief:-1}
+brief=${brief:-0}
 if [[ $brief = 1 ]] ; then
     briefarg="--brief-explanation"
 fi
 #--task_name sentiment3
 #--model_type distilbert
 #--do_lower_case
-cmd="$python -u $pythonargs ./explain/explain_server.py --model finmodel3 --do_lower_case --overwrite_cache  --max_seq_length 128 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
+#--server
+#--verbose_every 1
+#--per_gpu_eval_batch_size=32.0
+#--overwrite_cache
+cmd="$python -u $pythonargs ./explain/explain_server.py --model finmodel3 --do_lower_case --max_length 128 --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
 if [[ $confluence = 1 ]] ; then
     cmd+=" --confluence-markup"
 fi
@@ -81,7 +93,7 @@ else
     echo $out
     cut -c1 < $out | head -n -1 > $textfile.cls
     wc -l $out $textfile.cls $textfile
-    if [[ $dev = 1 ]] ; then
+    if [[ $deveval = 1 ]] ; then
         python tests/accuracy.py $devtextgold $textfile.cls
     fi
     if [[ $open = 1 && -s $hf ]]; then
