@@ -1,0 +1,20 @@
+tensorboardX
+tensorboard
+scikit-learn
+seqeval
+nltk
+ftfy
+tqdm
+kafka-python
+protobuf>=3.11.3
+
+# Accessing files from S3 directly.
+boto3
+# Used for downloading models over HTTP
+requests
+# For OpenAI GPT
+regex != 2019.12.17
+# For XLNet
+sentencepiece
+# For XLM
+sacremoses

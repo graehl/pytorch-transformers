@@ -44,7 +44,10 @@ brief=${brief:-1}
 if [[ $brief = 1 ]] ; then
     briefarg="--brief-explanation"
 fi
-cmd="$python -u $pythonargs ./explain/explain_server.py --model_type distilbert --model_name_or_path finmodel3 --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 128 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
+#--task_name sentiment3
+#--model_type distilbert
+#--do_lower_case
+cmd="$python -u $pythonargs ./explain/explain_server.py --model finmodel3 --do_lower_case --overwrite_cache  --max_seq_length 128 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
 if [[ $confluence = 1 ]] ; then
     cmd+=" --confluence-markup"
 fi
@@ -56,16 +59,16 @@ header() {
     [[ $confluence = 1 ]] || echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />'
 }
 if [[ $1 = -p ]] ; then
-    cat $textfile | python -u ./examples/send_document.py | $cmd --proto  | python -u ./examples/recv_labeled_document.py
+    cat $textfile | python -u ./explain/send_document.py | $cmd --proto  | python -u ./explain/recv_labeled_document.py
 elif [[ $1 = -k ]] ; then
     kafkas="--kafka --kafka-bootstrap $kafka_bootstrap --kafka-in-topic $kafka_in_topic --kafka-out-topic $kafka_out_topic"
     $cmd $kafkas &
     sleep 15
     echo sending
-    cat $textfile | python -u ./examples/send_document.py $kafkas
+    cat $textfile | python -u ./explain/send_document.py $kafkas
     echo listening
-    python -u ./examples/recv_labeled_document.py $kafkas
-    echo python -u ./examples/send_document.py $kafkas
+    python -u ./explain/recv_labeled_document.py $kafkas
+    echo python -u ./explain/send_document.py $kafkas
 else
     hf=$textfile.sentiment-importance.html
     out=$textfile.out
