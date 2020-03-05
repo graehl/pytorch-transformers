@@ -1,9 +1,10 @@
 cd `dirname $0`
 export PATH=/usr/local/anaconda3/bin:$PATH
+rebuild=${rebuild:-0}
+pip install -r explain/requirements.txt
 if [[ $rebuild = 1 ]] ; then
-    (cd examples; ./build_proto.sh)
-    pip install -r requirements.txt
-    pip install -r examples/requirements.txt
+    (cd explain; ./build_proto.sh)
+    pip install -r explain/requirements.txt
   pip install .
 fi
 mkdir -p unusedin
@@ -18,11 +19,11 @@ echo >> $textfile
 echo 'Long on JNJ!' >> $textfile
 echo 'The library comprises several example scripts.' >> $textfile
 echo >> $textfile
-textfile=tests/fixtures/sample_text.txt
+#textfile=tests/fixtures/sample_text.txt
 textfile2=tests/sdlfin.txt
 devtextfile=tests/dev2.txt
 devtextgold=$devtextfile.gold
-dev=${dev:-1}
+dev=${dev:-0}
 if [[ $dev = 1 && -f $devtextfile ]] ; then
     brief=1
     textfile=$devtextfile
@@ -43,7 +44,7 @@ brief=${brief:-1}
 if [[ $brief = 1 ]] ; then
     briefarg="--brief-explanation"
 fi
-cmd="$python -u $pythonargs ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel3 --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 128 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
+cmd="$python -u $pythonargs ./explain/explain_server.py --model_type distilbert --model_name_or_path finmodel3 --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 128 --per_gpu_eval_batch_size=32.0 --verbose_every 1 --server --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
 if [[ $confluence = 1 ]] ; then
     cmd+=" --confluence-markup"
 fi
@@ -84,4 +85,3 @@ else
         open $hf
     fi
 fi
-#python -u ./examples/run_glue.py --model_type distilbert --model_name_or_path finmodel --task_name sentiment3 --do_lower_case --overwrite_cache --no_cache --eval_text /dev/null --data_dir unusedin --max_seq_length 64 --per_gpu_eval_batch_size=32.0 --output_dir finmodel  --verbose_every 1 --server --verbose 0 "$@"
