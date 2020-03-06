@@ -166,7 +166,9 @@ def set_seed(args):
 
 def classify1(text, args, model, tokenizer):
     x = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt', max_length=args.max_length)
-    tensor = model(x['input_ids'], token_type_ids=x['token_type_ids'] if args.model_type in ['bert', 'xlnet'] else None)
+    tensor = model(x['input_ids'])
+    # token_type_ids=x['token_type_ids'] if args.model_type in ['bert', 'xlnet'] else None
+    # token_type_ids for this fn only supported in https://github.com/graehl/transformers - not 'pip install transformers'
     return tensor[0].tolist()[0]
     #.to_list
 

@@ -82,8 +82,12 @@ elif [[ $1 = -k ]] ; then
     python -u ./explain/recv_labeled_document.py $kafkas
     echo python -u ./explain/send_document.py $kafkas
 else
-    hf=$textfile.sentiment-importance.html
-    out=$textfile.out
+    outbase=/tmp/sentiment/
+    mkdir -p $outbase
+    outbase+=`basename $textfile`
+    hf=$outbase.sentiment-importance.html
+    out=$outbase.out
+    outcls=$outbase.cls
     rm -f $hf $out
     wc -l $textfile
     set -o pipefail
@@ -91,10 +95,10 @@ else
     ( header; $cmd < $textfile | tee $out ) | tee $hf
     echo $0/$hf
     echo $out
-    cut -c1 < $out | head -n -1 > $textfile.cls
-    wc -l $out $textfile.cls $textfile
+    cut -c1 < $out | head -n -1 > $outcls
+    wc -l $out $outcls $textfile
     if [[ $deveval = 1 ]] ; then
-        python tests/accuracy.py $devtextgold $textfile.cls
+        python tests/accuracy.py $devtextgold $outcls
     fi
     if [[ $open = 1 && -s $hf ]]; then
         open $hf

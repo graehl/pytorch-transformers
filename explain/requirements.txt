@@ -18,3 +18,6 @@ regex != 2019.12.17
 sentencepiece
 # For XLM
 sacremoses
+
+torch>=1.4.0
+transformers
