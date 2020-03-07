@@ -4,8 +4,7 @@ rebuild=${rebuild:-0}
 pip install -r explain/requirements.txt
 if [[ $rebuild = 1 ]] ; then
     (cd explain; ./build_proto.sh)
-    pip install -r explain/requirements.txt
-  pip install .
+    #pip install .
 fi
 mkdir -p unusedin
 touch unusedin/train.tsv
@@ -59,7 +58,9 @@ fi
 #--verbose_every 1
 #--per_gpu_eval_batch_size=32.0
 #--overwrite_cache
-cmd="$python -u $pythonargs ./explain/explain_server.py --model finmodel3 --do_lower_case --max_length 128 --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
+#--do_lower_case --max_length 128
+d=`dirname $0`
+cmd="$python -u $pythonargs $d/explain/explain_server.py --model $d/finmodel3  --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
 if [[ $confluence = 1 ]] ; then
     cmd+=" --confluence-markup"
 fi
