@@ -60,7 +60,7 @@ fi
 #--overwrite_cache
 #--do_lower_case --max_length 128
 d=`dirname $0`
-cmd="$python -u $pythonargs $d/explain/explain_server.py --model $d/finmodel3  --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
+cmd="$python -u $pythonargs $d/explain/explain_server.py --model $d/finmodel4  --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
 if [[ $confluence = 1 ]] ; then
     cmd+=" --confluence-markup"
 fi
