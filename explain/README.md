@@ -1,4 +1,8 @@
-### Sentiment (or other fine-tuned LM text classifier) important words explanation/visualizaion
+### Sentiment important words explanation/visualizaion
+
+(note: this code is not sentiment specific - it works without
+change for any segment classification models trained using
+pytorch-transformers LM fine tuning)
 
 ### Installation/Usage
 
@@ -11,7 +15,7 @@
 
 which has output:
 
-POS(+6.409)[-3.5 4.15 -2.26] Perkins lifts dividend; <b><font color="#007400">earnings</font></b> <b><font color="#00ff00">rise</font></b> 15%<br/>
+    POS(+6.409)[-3.5 4.15 -2.26] Perkins lifts dividend; <b><font color="#007400">earnings</font></b> <b><font color="#00ff00">rise</font></b> 15%<br/>
 
 This will segment inputs into sentences without the `--segmented` flag.
 
