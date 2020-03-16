@@ -45,7 +45,7 @@ confluence=${confluence:-0}
 explainarg=""
 explain=${explain:-1}
 if [[ $explain = 1 ]] ; then
-    explainarg="--explain"
+    explainarg="--explain --explain-stopwords True"
 fi
 brief=${brief:-0}
 if [[ $brief = 1 ]] ; then
@@ -94,7 +94,7 @@ else
     set -o pipefail
     set -e
     ( header; $cmd < $textfile | tee $out ) | tee $hf
-    echo $0/$hf
+    echo $hf
     echo $out
     cut -c1 < $out | head -n -1 > $outcls
     wc -l $out $outcls $textfile

@@ -191,20 +191,18 @@ import regex
 allpunc = regex.compile(r'^\p{P}*$')
 
 
-def nltk_stopwords(lang='english'):
-    import nltk
-    try:
-        return nltk.corpus.stopwords.words(lang)
-    except:
-        nltk.download('stopwords', quiet=True)
-        return nltk.corpus.stopwords.words(lang)
+def nltk_stopwords(extended=False):
+    w = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'too', 'other', 'some', 'such', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', 'than', 'now', 'will', 'just', 'so', 's', 't', 'ma']
+    if extended:
+        w += ['few', 'more', 'most', 'no', 'nor', 'not', 'only', 'own', 'can', 'same', 'very',  'don', "don't", 'should', "should've", "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"]
+    return w
 
 
 def labeldoc(doc, args, model, tokenizer):
     stopwords = set()
     if not args.explain_stopwords:
         if not hasattr(args, 'stopwords'):
-            args.stopwords = set(nltk_stopwords())
+            args.stopwords = set(nltk_stopwords(extended=False))
         stopwords = args.stopwords
     ldoc = ld.LabeledDocument()
     ldoc.document_id = doc.document_id
