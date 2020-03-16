@@ -13,12 +13,13 @@ pytorch-transformers LM fine tuning)
     echo 'Perkins lifts dividend; earnings rise 15%' |
     python -u explain_server.py --model /build2/ca/sentiment/finmodel4 --explain --segmented
 
+which has output highlighting (with intensity) the words relevant to the decision margin:
 
-which has output:
+    POS(+6.409)[-3.5 4.15 -2.26] Perkins lifts dividend; <b><font color="#007400">earnings</font></b> <b><font color="#00ff00">rise</font></b> 15%<br/>
 
 POS(+6.409)[-3.5 4.15 -2.26] Perkins lifts dividend; <b><font color="#007400">earnings</font></b> <b><font color="#00ff00">rise</font></b> 15%<br/>
 
-This will segment inputs into sentences without the `--segmented` flag.
+(the `--segmented` flag means the input is already split into one sentence per line)
 
 ### Training
 
