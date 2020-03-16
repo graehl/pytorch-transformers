@@ -10,12 +10,13 @@ pytorch-transformers LM fine tuning)
 
     pip install -r /home/graehl/explain/requirements.txt
 
-    echo 'Perkins lifts dividend; earnings rise 15%' | python -u explain_server.py --model /build2/ca/sentiment/finmodel4 --verbose 0 --log_level warn --explain --explain-maxwords 7 --explain-punctuation False --segmented
+    echo 'Perkins lifts dividend; earnings rise 15%' |
+    python -u explain_server.py --model /build2/ca/sentiment/finmodel4 --explain --segmented
 
 
 which has output:
 
-    POS(+6.409)[-3.5 4.15 -2.26] Perkins lifts dividend; <b><font color="#007400">earnings</font></b> <b><font color="#00ff00">rise</font></b> 15%<br/>
+POS(+6.409)[-3.5 4.15 -2.26] Perkins lifts dividend; <b><font color="#007400">earnings</font></b> <b><font color="#00ff00">rise</font></b> 15%<br/>
 
 This will segment inputs into sentences without the `--segmented` flag.
 
@@ -75,6 +76,9 @@ hAppy birds are happy.", we would have "happy" for `word` and
 ['hAppy', 'Happy'] for `wordalt`, because the importance was assessed
 not for each one in isolation, but by removing all together.
 
+Logits are just the pre-softmax results for each of the N classes;
+whichever is highest is the predicted class. For sentiment3 the
+classes are [negative, positive, neutral].
 
 ### Protobuf messages to/from text examples
 
@@ -104,11 +108,15 @@ options dictating whether the input is already segmented, etc:
       --kafka               run kafka RPC-like service - read from kafka-in-topic
                             and write to kafka-out-topic
 
+The option to save the segments to a file is to make it easier to
+visualize the `LabeledDocument` output message which doesn't
+recapitulate the input text (this could easily be changed).
 
 Or start the kafka service in the background and then send/receive at leisure:
 
-    python -u explain_server.py --model /build2/ca/sentiment/finmodel4 --explain  --kafka --kafka-bootstrap localhost:9092 --kafka-in-topic labelin --kafka-out-topic labelout &
+    python -u explain_server.py --model /build2/ca/sentiment/finmodel4 --explain \
+      --kafka --kafka-bootstrap localhost:9092 --kafka-in-topic labelin --kafka-out-topic labelout &
 
-    cat $textfile | python -u ./explain/send_document.py  --kafka --kafka-bootstrap localhost:9092 --kafka-in-topic labelin --kafka-out-topic labelout
+    cat $textfile | python -u ./explain/send_document.py --kafka --kafka-bootstrap localhost:9092 --kafka-in-topic labelin --kafka-out-topic labelout
 
-    python -u ./explain/recv_labeled_document.py  --kafka --kafka-bootstrap localhost:9092 --kafka-in-topic labelin --kafka-out-topic labelout
+    python -u ./explain/recv_labeled_document.py --kafka --kafka-bootstrap localhost:9092 --kafka-in-topic labelin --kafka-out-topic labelout
