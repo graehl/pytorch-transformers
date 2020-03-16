@@ -1,4 +1,4 @@
-### Sentiment important words explanation/visualizaion
+### Sentiment important words explanation/visualization
 
 (note: this code is not sentiment specific - it works without
 change for any segment classification models trained using
