@@ -19,7 +19,7 @@ which has output highlighting (with intensity) the words relevant to the decisio
 
 POS(+6.409)[-3.5 4.15 -2.26] Perkins lifts dividend; <b><font color="#007400">earnings</font></b> <b><font color="#00ff00">rise</font></b> 15%<br/>
 
-(see <a href="findev-highlights.html">findev-highlights.html</a> for example colorized important words)
+(see <a href="http://htmlpreview.github.io/?https://github.com/graehl/pytorch-transformers/blob/master/explain/findev-highlights.html">findev-highlights.html</a> for example colorized important words)
 
 (the `--segmented` flag means the input is already split into one sentence per line)
 
