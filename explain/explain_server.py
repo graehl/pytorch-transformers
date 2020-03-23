@@ -167,6 +167,7 @@ def set_seed(args):
 def classify1(text, args, model, tokenizer):
     x = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt', max_length=args.max_length)
     tensor = model(x['input_ids'])
+    if verbosity >= 3: log("encoded %s from '%s'" % (x['input_ids'][0].tolist()[1:-1], text))
     # token_type_ids=x['token_type_ids'] if args.model_type in ['bert', 'xlnet'] else None
     # token_type_ids for this fn only supported in https://github.com/graehl/transformers - not 'pip install transformers'
     return tensor[0].tolist()[0]
@@ -204,6 +205,7 @@ def labeldoc(doc, args, model, tokenizer):
         if not hasattr(args, 'stopwords'):
             args.stopwords = set(nltk_stopwords(extended=False))
         stopwords = args.stopwords
+    maskword = '[MASK]' if args.explain_maskword else None
     ldoc = ld.LabeledDocument()
     ldoc.document_id = doc.document_id
     sys.stderr.write("# got doc id=%s with %s segments\n" % (doc.document_id, len(doc.segments)))
@@ -240,7 +242,7 @@ def labeldoc(doc, args, model, tokenizer):
                         if word != wordlc:
                             word = w
                     #if len(words) > 1: log("variants %s <= %s" % (word, words))
-                    without = explanation.withoutwords(words, segment)
+                    without = explanation.withoutwords(words, segment, maskword=maskword)
                     if without == segment:
                         log("skipped '%s' (punc=%s) no change when removing from '%s' words=%s" % (word, allpunc.match(word), segment, words))
                         continue

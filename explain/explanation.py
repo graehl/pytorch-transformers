@@ -2,6 +2,7 @@ import regex
 def wordre(word):
     return regex.compile(r'(?:^|\b|(?<=(?:\p{P}|\s)))%s(?:$|\b|(?=(?:\p{P}|\s)))' % regex.escape(word))
 
+spacere = regex.compile(r'\s+')
 
 def normalize_punctuation(x):
     try:
@@ -54,17 +55,21 @@ def candidate_words(line):
 
 #TODO: something exactly consistent with tokenizer proposing words
 def replaceword(word, repl, line):
-    return regex.sub(wordre(word), repl, line)
+    return wordre(word).sub(repl, line)
 
 
-def withoutword(word, line):
-    return replaceword(word, "", line)
+def withoutword(word, line, maskword=''):
+    return replaceword(word, maskword, line)
 
 
-def withoutwords(words, line):
+def withoutwords(words, line, maskword=None):
+    if maskword is None:
+        maskword = ''
+    else:
+        maskword = ' ' + maskword + ' '
     for word in words:
-        line = withoutword(word, line)
-    return line
+        line = withoutword(word, line, maskword=maskword)
+    return spacere.sub(' ', line)
 
 
 def bytealpha(alpha):

@@ -1,9 +1,12 @@
 cd `dirname $0`
+d=`pwd`
 export PATH=/usr/local/anaconda3/bin:$PATH
 rebuild=${rebuild:-0}
-pip install -r explain/requirements.txt
+#explaindir=$d/explain
+explaindir=~/CoreNLP/sandbox/sentiment3
+pip install -r $explaindir/requirements.txt
 if [[ $rebuild = 1 ]] ; then
-    (cd explain; ./build_proto.sh)
+    (cd $explaindir; ./build_proto.sh)
     #pip install .
 fi
 mkdir -p unusedin
@@ -45,7 +48,12 @@ confluence=${confluence:-0}
 explainarg=""
 explain=${explain:-1}
 if [[ $explain = 1 ]] ; then
-    explainarg="--explain --explain-stopwords True"
+    explainarg="--explain --explain-stopwords False"
+fi
+maskarg=
+maskword=${maskword:-0}
+if [[ $maskword = 1 ]] ; then
+    maskarg="--explain-maskword True"
 fi
 brief=${brief:-0}
 if [[ $brief = 1 ]] ; then
@@ -59,8 +67,11 @@ fi
 #--per_gpu_eval_batch_size=32.0
 #--overwrite_cache
 #--do_lower_case --max_length 128
-d=`dirname $0`
-cmd="$python -u $pythonargs $d/explain/explain_server.py --model $d/finmodel4  --verbose 0 --log_level warn $explainarg $briefarg --explain-maxwords 7 --explain-punctuation False --segmented"
+segarg=
+if [[ $dev = 1 ]] ; then
+    segarg='--segmented'
+fi
+cmd="$python -u $pythonargs $explaindir/explain_server.py --model $d/finmodel4  --verbose 0 --log_level warn $explainarg $briefarg $maskarg --explain-maxwords 7 --explain-punctuation False $segarg"
 if [[ $confluence = 1 ]] ; then
     cmd+=" --confluence-markup"
 fi
@@ -93,7 +104,7 @@ else
     wc -l $textfile
     set -o pipefail
     set -e
-    ( header; $cmd < $textfile | tee $out ) | tee $hf
+    ( header; time $cmd < $textfile | tee $out ) | tee $hf
     echo $hf
     echo $out
     cut -c1 < $out | head -n -1 > $outcls

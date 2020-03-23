@@ -18,3 +18,4 @@ def add_explain_args(parser):
     parser.add_argument('--explain-maxwords-portion', type=float, help='for explain, choose at most this portion of words (portion <= 1)', default=0.2)
     parser.add_argument('--explain-stopwords', type=boolarg, help='for explain, allow stopwords', default=False)
     parser.add_argument('--explain-punctuation', type=boolarg, help='for explain, allow punctuation', default=False)
+    parser.add_argument('--explain-maskword', type=boolarg, help='for explain, use [MASK] instead of deleting word', default=False)
